@@ -45,7 +45,7 @@ const Popup = () => {
       {/* Logo Section */}
       <div style={{ marginBottom: '30px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
         <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
-          {/* Camera Lens Icon */}
+          {/* Aperture Icon */}
           <div style={{
             width: '40px',
             height: '40px',
@@ -54,20 +54,19 @@ const Popup = () => {
             display: 'flex',
             alignItems: 'center',
             justifyContent: 'center',
-            boxShadow: '0 4px 12px rgba(126, 34, 206, 0.4)'
+            WebkitBackfaceVisibility: 'hidden',
+            backfaceVisibility: 'hidden',
+            willChange: 'transform',
+            isolation: 'isolate'
           }}>
             <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-              <circle cx="12" cy="12" r="10"></circle>
-              <circle cx="12" cy="12" r="6"></circle>
-              <circle cx="12" cy="12" r="2"></circle>
-              <path d="M12 2v2"></path>
-              <path d="M12 20v2"></path>
-              <path d="M2 12h2"></path>
-              <path d="M20 12h2"></path>
-              <path d="M6.34 6.34l1.42 1.42"></path>
-              <path d="M16.24 16.24l1.42 1.42"></path>
-              <path d="M6.34 17.66l1.42-1.42"></path>
-              <path d="M16.24 7.76l1.42-1.42"></path>
+              <circle cx="12" cy="12" r="10" />
+              <path d="m14.31 8 5.74 9.94" />
+              <path d="M9.69 8h11.48" />
+              <path d="m7.38 12 5.74-9.94" />
+              <path d="M9.69 16 3.95 6.06" />
+              <path d="M14.31 16H2.83" />
+              <path d="m16.62 12-5.74 9.94" />
             </svg>
           </div>
 

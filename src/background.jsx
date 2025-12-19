@@ -48,8 +48,39 @@ async function handleCaptureVisible() {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (!tab) return;
 
+    // CSS to hide scrollbars - More aggressive
+    const css = `
+      html, body {
+        overflow: hidden !important;
+        scrollbar-width: none !important;
+        -ms-overflow-style: none !important;
+      }
+      html::-webkit-scrollbar, body::-webkit-scrollbar, ::-webkit-scrollbar {
+        width: 0 !important;
+        height: 0 !important;
+        display: none !important;
+        background: transparent !important;
+      }
+    `;
+
+    // Inject CSS
+    await chrome.scripting.insertCSS({
+      target: { tabId: tab.id },
+      css: css
+    }).catch(err => console.warn("Failed to inject CSS:", err));
+
+    // Tiny safety buffer (50ms) to ensure the render engine applies the 'overflow: hidden'
+    // This is practically instant for the user but fixes the race condition.
+    await new Promise(r => setTimeout(r, 50));
+
     // Capture
     const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
+
+    // Remove CSS
+    await chrome.scripting.removeCSS({
+      target: { tabId: tab.id },
+      css: css
+    }).catch(err => console.warn("Failed to remove CSS:", err));
 
     // Clear storage first to avoid quota issues with old data
     await chrome.storage.local.remove(['capturedImage', 'originalCaptures']);

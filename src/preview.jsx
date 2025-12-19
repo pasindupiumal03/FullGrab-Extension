@@ -713,16 +713,13 @@ const Preview = () => {
                                 boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
                             }}>
                                 <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a855f7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                                    <circle cx="12" cy="12" r="10"></circle>
-                                    <circle cx="12" cy="12" r="4"></circle>
-                                    <line x1="12" y1="2" x2="12" y2="6"></line>
-                                    <line x1="12" y1="18" x2="12" y2="22"></line>
-                                    <line x1="4.93" y1="4.93" x2="7.76" y2="7.76"></line>
-                                    <line x1="16.24" y1="16.24" x2="19.07" y2="19.07"></line>
-                                    <line x1="2" y1="12" x2="6" y2="12"></line>
-                                    <line x1="18" y1="12" x2="22" y2="12"></line>
-                                    <line x1="4.93" y1="19.07" x2="7.76" y2="16.24"></line>
-                                    <line x1="16.24" y1="7.76" x2="19.07" y2="4.93"></line>
+                                    <circle cx="12" cy="12" r="10" />
+                                    <path d="m14.31 8 5.74 9.94" />
+                                    <path d="M9.69 8h11.48" />
+                                    <path d="m7.38 12 5.74-9.94" />
+                                    <path d="M9.69 16 3.95 6.06" />
+                                    <path d="M14.31 16H2.83" />
+                                    <path d="m16.62 12-5.74 9.94" />
                                 </svg>
                             </div>
 
