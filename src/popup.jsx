@@ -43,12 +43,65 @@ const Popup = () => {
       `}</style>
 
       {/* Logo Section */}
-      <div style={{ marginBottom: '25px', display: 'flex', justifyContent: 'center' }}>
-        <img
-          src="full.png"
-          alt="FullGrab"
-          style={{ width: '160px', height: 'auto', marginBottom: '5px', marginLeft: '0px' }}
-        />
+      <div style={{ marginBottom: '30px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+          {/* Camera Lens Icon */}
+          <div style={{
+            width: '40px',
+            height: '40px',
+            borderRadius: '10px',
+            background: 'linear-gradient(135deg, #ea580c 0%, #7e22ce 100%)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            boxShadow: '0 4px 12px rgba(126, 34, 206, 0.4)'
+          }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10"></circle>
+              <circle cx="12" cy="12" r="6"></circle>
+              <circle cx="12" cy="12" r="2"></circle>
+              <path d="M12 2v2"></path>
+              <path d="M12 20v2"></path>
+              <path d="M2 12h2"></path>
+              <path d="M20 12h2"></path>
+              <path d="M6.34 6.34l1.42 1.42"></path>
+              <path d="M16.24 16.24l1.42 1.42"></path>
+              <path d="M6.34 17.66l1.42-1.42"></path>
+              <path d="M16.24 7.76l1.42-1.42"></path>
+            </svg>
+          </div>
+
+          {/* Brand Text */}
+          <div style={{ display: 'flex', alignItems: 'baseline', lineHeight: 1 }}>
+            <span style={{
+              fontSize: '32px',
+              fontWeight: 900,
+              letterSpacing: '-0.5px',
+              color: '#ea580c',
+              WebkitTextStroke: '0.5px #ea580c',
+              textShadow: '0 0 1px rgba(234, 88, 12, 0.5)'
+            }}>Full</span>
+            <span style={{
+              fontSize: '32px',
+              fontWeight: 900,
+              letterSpacing: '-0.5px',
+              color: '#7e22ce',
+              WebkitTextStroke: '0.5px #7e22ce',
+              textShadow: '0 0 1px rgba(126, 34, 206, 0.5)'
+            }}>Grab</span>
+          </div>
+        </div>
+
+        {/* Tagline */}
+        <p style={{
+          fontSize: '12px',
+          color: '#9CA3AF',
+          margin: 0,
+          fontWeight: 500,
+          letterSpacing: '0.3px'
+        }}>
+          Full Page Capture. Smart Privacy. Instant Sharing.
+        </p>
       </div>
 
       {/* Actions */}

@@ -55,7 +55,9 @@ async function handleCaptureVisible() {
     await chrome.storage.local.remove(['capturedImage', 'originalCaptures']);
     await chrome.storage.local.set({
       capturedImage: dataUrl,
-      originalCaptures: [{ dataUrl, y: 0 }]
+      originalCaptures: [{ dataUrl, y: 0 }],
+      pageTitle: tab.title || 'Screenshot',
+      pageUrl: tab.url || ''
     });
 
     chrome.tabs.create({ url: 'preview.html' });
@@ -164,7 +166,9 @@ async function handleCaptureFullPage() {
       // Store new data
       await chrome.storage.local.set({
         capturedImage: StitchResponse.dataUrl,
-        originalCaptures: captures
+        originalCaptures: captures,
+        pageTitle: tab.title || 'Screenshot',
+        pageUrl: tab.url || ''
       });
 
       chrome.tabs.create({ url: 'preview.html' });
