@@ -106,10 +106,31 @@ if (!window.hasCapturelyListener) {
             const body = document.body;
             const html = document.documentElement;
 
-            const fullHeight = Math.max(
+            // Standard height calculations
+            const standardHeight = Math.max(
                 body.scrollHeight, body.offsetHeight,
                 html.clientHeight, html.scrollHeight, html.offsetHeight
             );
+
+            // Additional check: Find the bottom-most element to ensure footer is captured
+            let maxBottom = standardHeight;
+
+            try {
+                // Get all elements and find the one with the highest bottom position
+                const allElements = document.querySelectorAll('*');
+                for (const element of allElements) {
+                    const rect = element.getBoundingClientRect();
+                    const elementBottom = rect.bottom + window.scrollY;
+                    if (elementBottom > maxBottom) {
+                        maxBottom = elementBottom;
+                    }
+                }
+            } catch (e) {
+                console.warn('Could not calculate element positions:', e);
+            }
+
+            // Use the larger value to ensure we capture everything
+            const fullHeight = Math.max(standardHeight, maxBottom);
 
             sendResponse({
                 fullHeight,
