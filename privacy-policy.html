@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Privacy Policy - FullGrab</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            line-height: 1.6;
+            color: #333;
+            background-color: #f8f9fa;
+        }
+
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 40px 20px;
+            background-color: #fff;
+            box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+            min-height: 100vh;
+        }
+
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            padding-bottom: 30px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .logo {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 12px;
+            margin-bottom: 20px;
+        }
+
+        .logo-icon {
+            width: 48px;
+            height: 48px;
+            border-radius: 12px;
+        }
+        
+        .logo-icon img {
+            width: 100%;
+            height: 100%;
+            object-fit: contain;
+        }
+
+        .logo-text {
+            font-size: 28px;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+
+        h1 {
+            color: #e74c3c;
+            font-size: 36px;
+            margin-bottom: 10px;
+            font-weight: 700;
+        }
+
+        .last-updated {
+            color: #7f8c8d;
+            font-size: 14px;
+            font-style: italic;
+        }
+
+        h2 {
+            color: #2c3e50;
+            font-size: 24px;
+            margin-top: 35px;
+            margin-bottom: 15px;
+            font-weight: 600;
+        }
+
+        h2:first-of-type {
+            margin-top: 0;
+        }
+
+        p {
+            margin-bottom: 15px;
+            color: #555;
+            text-align: justify;
+        }
+
+        strong {
+            color: #2c3e50;
+            font-weight: 600;
+        }
+
+        ul {
+            margin: 15px 0;
+            padding-left: 25px;
+        }
+
+        li {
+            margin-bottom: 10px;
+            color: #555;
+        }
+
+        .highlight-box {
+            background-color: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 15px 20px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+
+        .highlight-box p {
+            margin-bottom: 0;
+        }
+
+        .section {
+            margin-bottom: 30px;
+        }
+
+        .footer {
+            text-align: center;
+            margin-top: 50px;
+            padding-top: 30px;
+            border-top: 2px solid #f0f0f0;
+            color: #7f8c8d;
+            font-size: 14px;
+        }
+
+        .permission-item {
+            margin-bottom: 15px;
+        }
+
+        .permission-name {
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        @media (max-width: 768px) {
+            .container {
+                padding: 30px 15px;
+            }
+
+            h1 {
+                font-size: 28px;
+            }
+
+            h2 {
+                font-size: 20px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <div class="logo">
+                <div class="logo-icon">
+                    <img src="Logo.png" alt="FullGrab Logo">
+                </div>
+                <div class="logo-text">FullGrab</div>
+            </div>
+            <h1>Privacy Policy</h1>
+            <p class="last-updated">Last Updated: December 2025 (First Release)</p>
+        </div>
+
+        <div class="section">
+            <h2>Introduction</h2>
+            <p>Welcome to <strong>FullGrab</strong>. This privacy policy applies to the FullGrab browser extension.</p>
+            <p>We believe your data belongs to you. This "First Release" of FullGrab is designed with privacy as a core principle. We do <strong>not</strong> collect, track, or sell your personal data. All processing happens locally on your device, and you maintain complete control over what gets saved or shared.</p>
+        </div>
+
+        <div class="section">
+            <h2>Data Collection</h2>
+            <div class="highlight-box">
+                <p><strong>We do not collect any personal data.</strong></p>
+            </div>
+            <p>FullGrab operates primarily locally on your device. We do not have analytics trackers that receive your browsing history, capture content, or personal information without your explicit consent.</p>
+            <p>The Smart Privacy feature (auto-blur) processes all sensitive data detection <strong>entirely on your device</strong>. No data is sent to external servers for analysis.</p>
+        </div>
+
+        <div class="section">
+            <h2>Data Storage</h2>
+            <p>FullGrab offers two storage options:</p>
+            
+            <p><strong>Local Storage:</strong> By default, all captures are stored locally on your device using the Chrome Extension Storage API (chrome.storage.local). This data never leaves your browser environment unless you choose to export or share it.</p>
+            
+            <p><strong>Cloud Storage (Optional):</strong> If you enable the Cloud Auto-Save feature, your captures (screenshots and videos) are uploaded to secure cloud storage. This is entirely optional and requires your explicit permission. You can:</p>
+            <ul>
+                <li>Enable or disable cloud storage at any time</li>
+                <li>Choose which captures to upload</li>
+                <li>Delete cloud-stored captures whenever you wish</li>
+                <li>Access your captures from any device when logged in</li>
+            </ul>
+            
+            <p>Cloud-stored data is secured with industry-standard encryption and is only accessible to you through your account.</p>
+        </div>
+
+        <div class="section">
+            <h2>Smart Privacy Feature</h2>
+            <p>FullGrab's Smart Privacy feature automatically detects and blurs sensitive information in your captures, including:</p>
+            <ul>
+                <li>Email addresses</li>
+                <li>Credit card numbers</li>
+                <li>Phone numbers</li>
+                <li>Physical addresses</li>
+                <li>Login credentials</li>
+                <li>Personal identifiers</li>
+            </ul>
+            <p><strong>Important:</strong> All privacy detection and blurring is performed locally on your device using on-device algorithms. No data is transmitted to external servers for processing. You remain in full control of your sensitive information.</p>
+        </div>
+
+        <div class="section">
+            <h2>Shareable Links</h2>
+            <p>When you generate a shareable link for a capture, the image or video is uploaded to our secure hosting service to enable sharing. This is done only when you explicitly click the "Share" button.</p>
+            <p>Shared captures:</p>
+            <ul>
+                <li>Are accessible only to those with the unique link</li>
+                <li>Can be deleted by you at any time</li>
+                <li>Are stored with privacy protections (if Smart Privacy was enabled)</li>
+                <li>Are not indexed or made publicly searchable</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>Permissions</h2>
+            <p>FullGrab requires specific permissions to function correctly:</p>
+            
+            <div class="permission-item">
+                <span class="permission-name">activeTab:</span> Required to capture the currently active tab and its content.
+            </div>
+            
+            <div class="permission-item">
+                <span class="permission-name">tabs:</span> Required to access tab information for capturing full pages and visible areas.
+            </div>
+            
+            <div class="permission-item">
+                <span class="permission-name">storage:</span> Required to save your captures, settings, and preferences locally on your device.
+            </div>
+            
+            <div class="permission-item">
+                <span class="permission-name">downloads:</span> Required to save captured images and videos to your device when you choose to download them.
+            </div>
+            
+            <div class="permission-item">
+                <span class="permission-name">scripting:</span> Required to inject capture scripts into webpages for full-page scrolling captures.
+            </div>
+        </div>
+
+        <div class="section">
+            <h2>Third-Party Services</h2>
+            <p>FullGrab uses minimal third-party services:</p>
+            <ul>
+                <li><strong>Cloud Storage Provider:</strong> If you enable cloud storage, we use a secure cloud hosting service to store your captures. This data is encrypted and accessible only to you.</li>
+                <li><strong>No Analytics:</strong> We do not use Google Analytics, tracking pixels, or any analytics providers.</li>
+                <li><strong>No Advertisers:</strong> We do not share any data with advertisers or marketing platforms.</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>Data Security</h2>
+            <p>We take your security seriously:</p>
+            <ul>
+                <li>All cloud uploads use HTTPS encryption</li>
+                <li>Stored data is encrypted at rest</li>
+                <li>Smart Privacy processing happens entirely on your device</li>
+                <li>We implement industry-standard security practices</li>
+                <li>Access to cloud-stored data requires authentication</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>Your Rights and Control</h2>
+            <p>You have complete control over your data:</p>
+            <ul>
+                <li>Access and download all your stored captures</li>
+                <li>Delete captures from local or cloud storage at any time</li>
+                <li>Disable cloud storage and use only local storage</li>
+                <li>Revoke shareable links to remove public access</li>
+                <li>Export your data in standard formats (PNG, JPEG, MP4, GIF)</li>
+                <li>Uninstall the extension to remove all local data</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>Changes to This Policy</h2>
+            <p>We may update our Privacy Policy from time to time to reflect changes in our practices or for legal, operational, or regulatory reasons. Since this is the first release, any future updates will be posted on this page.</p>
+            <p>We will notify users of significant changes through the Chrome Web Store update notes or within the extension itself.</p>
+        </div>
+
+        <div class="section">
+            <h2>Contact Us</h2>
+            <p>If you have any questions, concerns, or suggestions about our Privacy Policy, please do not hesitate to contact us through the Chrome Web Store support page.</p>
+            <p>We are committed to addressing your privacy concerns and improving FullGrab based on your feedback.</p>
+        </div>
+
+        <div class="footer">
+            <p>© 2025 FullGrab. All rights reserved.</p>
+        </div>
+    </div>
+</body>
+</html>
