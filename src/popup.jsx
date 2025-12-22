@@ -43,12 +43,64 @@ const Popup = () => {
       `}</style>
 
       {/* Logo Section */}
-      <div style={{ marginBottom: '25px', display: 'flex', justifyContent: 'center' }}>
-        <img
-          src="full.png"
-          alt="FullGrab"
-          style={{ width: '160px', height: 'auto', marginBottom: '5px', marginLeft: '0px' }}
-        />
+      <div style={{ marginBottom: '30px', display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '10px', marginBottom: '8px' }}>
+          {/* Aperture Icon */}
+          <div style={{
+            width: '40px',
+            height: '40px',
+            borderRadius: '10px',
+            background: 'linear-gradient(135deg, #ea580c 0%, #7e22ce 100%)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            WebkitBackfaceVisibility: 'hidden',
+            backfaceVisibility: 'hidden',
+            willChange: 'transform',
+            isolation: 'isolate'
+          }}>
+            <svg width="24" height="24" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+              <circle cx="12" cy="12" r="10" />
+              <path d="m14.31 8 5.74 9.94" />
+              <path d="M9.69 8h11.48" />
+              <path d="m7.38 12 5.74-9.94" />
+              <path d="M9.69 16 3.95 6.06" />
+              <path d="M14.31 16H2.83" />
+              <path d="m16.62 12-5.74 9.94" />
+            </svg>
+          </div>
+
+          {/* Brand Text */}
+          <div style={{ display: 'flex', alignItems: 'baseline', lineHeight: 1 }}>
+            <span style={{
+              fontSize: '32px',
+              fontWeight: 900,
+              letterSpacing: '-0.5px',
+              color: '#ea580c',
+              WebkitTextStroke: '0.5px #ea580c',
+              textShadow: '0 0 1px rgba(234, 88, 12, 0.5)'
+            }}>Full</span>
+            <span style={{
+              fontSize: '32px',
+              fontWeight: 900,
+              letterSpacing: '-0.5px',
+              color: '#7e22ce',
+              WebkitTextStroke: '0.5px #7e22ce',
+              textShadow: '0 0 1px rgba(126, 34, 206, 0.5)'
+            }}>Grab</span>
+          </div>
+        </div>
+
+        {/* Tagline */}
+        <p style={{
+          fontSize: '12px',
+          color: '#9CA3AF',
+          margin: 0,
+          fontWeight: 500,
+          letterSpacing: '0.3px'
+        }}>
+          Full Page Capture. Smart Privacy. Instant Sharing.
+        </p>
       </div>
 
       {/* Actions */}

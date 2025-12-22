@@ -13,6 +13,11 @@ const Preview = () => {
     const [isSharing, setIsSharing] = useState(false);
     const [isEditing, setIsEditing] = useState(false);
     const [sharedLink, setSharedLink] = useState(null);
+    const [showToast, setShowToast] = useState(false);
+    const [showEditToast, setShowEditToast] = useState(false);
+    const [showDownloadToast, setShowDownloadToast] = useState(false);
+    const [downloadFormat, setDownloadFormat] = useState('');
+    const [pageInfo, setPageInfo] = useState({ title: 'Screenshot', url: '' });
 
     const handleShare = async () => {
         setIsSharing(true);
@@ -45,6 +50,41 @@ const Preview = () => {
         }
     };
 
+    const playSuccessSound = () => {
+        // Create a simple success beep sound using Web Audio API
+        try {
+            const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+            const oscillator = audioContext.createOscillator();
+            const gainNode = audioContext.createGain();
+
+            oscillator.connect(gainNode);
+            gainNode.connect(audioContext.destination);
+
+            oscillator.frequency.value = 800;
+            oscillator.type = 'sine';
+
+            gainNode.gain.setValueAtTime(0.3, audioContext.currentTime);
+            gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.2);
+
+            oscillator.start(audioContext.currentTime);
+            oscillator.stop(audioContext.currentTime + 0.2);
+        } catch (e) {
+            console.log('Could not play sound:', e);
+        }
+    };
+
+    const handleCopyLink = () => {
+        navigator.clipboard.writeText(sharedLink);
+        setSharedLink(null);
+        playSuccessSound();
+        setShowToast(true);
+
+        // Auto-hide toast after 5 seconds
+        setTimeout(() => {
+            setShowToast(false);
+        }, 5000);
+    };
+
     useEffect(() => {
         console.log("Preview mounted. Fetching from storage...");
         try {
@@ -72,35 +112,75 @@ const Preview = () => {
         }
     }, []);
 
+    // Fetch page info for filename generation
+    useEffect(() => {
+        chrome.storage.local.get(['pageTitle', 'pageUrl'], (result) => {
+            if (result.pageTitle && result.pageUrl) {
+                setPageInfo({ title: result.pageTitle, url: result.pageUrl });
+            }
+        });
+    }, []);
+
+    const generateFileName = async (extension) => {
+        // Get and increment capture counter
+        const result = await chrome.storage.local.get(['captureCounter']);
+        const counter = (result.captureCounter || 0) + 1;
+        await chrome.storage.local.set({ captureCounter: counter });
+
+        // Format counter with leading zeros (3 digits)
+        const formattedCounter = String(counter).padStart(3, '0');
+
+        // Extract domain from URL
+        let domain = 'capture';
+        try {
+            const urlObj = new URL(pageInfo.url);
+            domain = urlObj.hostname.replace('www.', '');
+        } catch (e) {
+            // If URL parsing fails, use default
+        }
+
+        // Clean title (remove special characters that can't be in filenames)
+        const cleanTitle = pageInfo.title.replace(/[<>:"/\\|?*]/g, '-').substring(0, 50);
+
+        // Format: FullGrab Capture 003 - Page Title - [domain].extension
+        return `FullGrab Capture ${formattedCounter} - ${cleanTitle} - [${domain}].${extension}`;
+    };
+
     const handleZoomIn = () => setZoom(prev => Math.min(prev + 10, 200));
     const handleZoomOut = () => setZoom(prev => Math.max(prev - 10, 10));
 
-    const handleDownloadPNG = () => {
+    const handleDownloadPNG = async () => {
+        const filename = await generateFileName('png');
         const link = document.createElement('a');
         link.href = image;
-        link.download = 'screenshot.png';
+        link.download = filename;
         link.click();
+
+        // Show success toast
+        setDownloadFormat('PNG');
+        setShowDownloadToast(true);
+        setTimeout(() => {
+            setShowDownloadToast(false);
+        }, 3000);
     };
 
-    const handleDownloadPDF = () => {
+    const handleDownloadPDF = async () => {
+        const filename = await generateFileName('pdf');
         if (!captures || captures.length === 0) {
-            // Fallback if no captures array (e.g. visible tab only old data)
-            const pdf = new jsPDF();
-            const imgProps = pdf.getImageProperties(image);
-            const pdfWidth = pdf.internal.pageSize.getWidth();
-            const pdfHeight = (imgProps.height * pdfWidth) / imgProps.width;
-            pdf.addImage(image, 'PNG', 0, 0, pdfWidth, pdfHeight);
-            pdf.save('screenshot.pdf');
+            alert('No captures available to export.');
             return;
         }
 
         // Multi-page PDF
-        // Create PDF with orientation based on first image
-        const firstCap = captures[0];
-        const isLandscape = firstCap.width > firstCap.height;
+        // Create PDF with orientati    const handleDownloadPDF = async () => {
+        // const filename = await generateFileName('pdf');
+        // if (!captures || captures.length === 0) {
+        //     alert('No captures available to export.');
+        //     return;
+        // }
 
         const pdf = new jsPDF({
-            orientation: isLandscape ? 'l' : 'p',
+            orientation: 'portrait',
             unit: 'px',
             format: 'a4' // Standard format, will fit images to it
         });
@@ -114,7 +194,7 @@ const Preview = () => {
             const imgData = cap.dataUrl;
 
             // Calculate dimensions to fit/fill page
-            // We want to fit within margins maybe? Or full page? 
+            // We want to fit within margins maybe? Or full page?
             // Let's do fit to width, standard PDF behavior
 
             const imgProps = pdf.getImageProperties(imgData);
@@ -136,11 +216,23 @@ const Preview = () => {
             pdf.addImage(imgData, 'PNG', x, y, w, h);
         });
 
-        pdf.save('fullgrab-export.pdf');
+        pdf.save(filename);
+
+        // Show success toast
+        setDownloadFormat('PDF');
+        setShowDownloadToast(true);
+        setTimeout(() => {
+            setShowDownloadToast(false);
+        }, 3000);
     };
 
     const handleEdit = () => {
-        setIsEditing(true);
+        setShowEditToast(true);
+
+        // Auto-hide toast after 3 seconds
+        setTimeout(() => {
+            setShowEditToast(false);
+        }, 3000);
     };
 
     const handleEditorSave = async (newImage) => {
@@ -160,6 +252,7 @@ const Preview = () => {
         setShowDeleteConfirm(false);
     };
 
+
     if (isDeleted) {
         return (
             <div style={{
@@ -168,21 +261,96 @@ const Preview = () => {
                 alignItems: 'center',
                 justifyContent: 'center',
                 height: '100vh',
-                fontFamily: 'Inter, sans-serif',
-                color: '#333',
-                backgroundColor: '#f9fafb'
+                background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                fontFamily: "'Inter', sans-serif",
+                padding: '20px'
             }}>
+                <style>{`
+                    @keyframes checkmarkScale {
+                        0% { transform: scale(0); opacity: 0; }
+                        50% { transform: scale(1.1); }
+                        100% { transform: scale(1); opacity: 1; }
+                    }
+                    @keyframes fadeInUp {
+                        from { opacity: 0; transform: translateY(20px); }
+                        to { opacity: 1; transform: translateY(0); }
+                    }
+                `}</style>
+
                 <div style={{
-                    background: '#fee2e2',
-                    padding: '20px',
-                    borderRadius: '50%',
-                    display: 'flex',
-                    marginBottom: '20px'
+                    background: 'white',
+                    borderRadius: '24px',
+                    padding: '60px 80px',
+                    boxShadow: '0 20px 60px rgba(0,0,0,0.3)',
+                    textAlign: 'center',
+                    maxWidth: '500px',
+                    animation: 'fadeInUp 0.5s ease-out'
                 }}>
-                    <svg width="40" height="40" viewBox="0 0 24 24" fill="none" stroke="#ef4444" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path><line x1="10" y1="11" x2="10" y2="17"></line><line x1="14" y1="11" x2="14" y2="17"></line></svg>
+                    {/* Animated Icon */}
+                    <div style={{
+                        width: '100px',
+                        height: '100px',
+                        background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                        borderRadius: '50%',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        margin: '0 auto 30px auto',
+                        animation: 'checkmarkScale 0.5s ease-out 0.2s both'
+                    }}>
+                        <svg width="50" height="50" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                            <polyline points="20 6 9 17 4 12"></polyline>
+                        </svg>
+                    </div>
+
+                    {/* Title */}
+                    <h2 style={{
+                        fontSize: '32px',
+                        marginBottom: '12px',
+                        fontWeight: 700,
+                        color: '#111827',
+                        letterSpacing: '-0.5px'
+                    }}>
+                        Screenshot Deleted
+                    </h2>
+
+                    {/* Message */}
+                    <p style={{
+                        color: '#6b7280',
+                        fontSize: '16px',
+                        marginBottom: '40px',
+                        lineHeight: 1.6
+                    }}>
+                        Your screenshot has been permanently deleted from storage.
+                    </p>
+
+                    {/* Action Button */}
+                    <button
+                        onClick={() => window.close()}
+                        style={{
+                            background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                            color: 'white',
+                            border: 'none',
+                            padding: '14px 32px',
+                            borderRadius: '12px',
+                            fontSize: '16px',
+                            fontWeight: 600,
+                            cursor: 'pointer',
+                            transition: 'all 0.2s ease',
+                            boxShadow: '0 4px 12px rgba(102, 126, 234, 0.3)'
+                        }}
+                        onMouseOver={(e) => {
+                            e.target.style.transform = 'translateY(-2px)';
+                            e.target.style.boxShadow = '0 6px 20px rgba(102, 126, 234, 0.4)';
+                        }}
+                        onMouseOut={(e) => {
+                            e.target.style.transform = 'translateY(0)';
+                            e.target.style.boxShadow = '0 4px 12px rgba(102, 126, 234, 0.3)';
+                        }}
+                    >
+                        Close Window
+                    </button>
                 </div>
-                <h2 style={{ fontSize: '24px', marginBottom: '8px', fontWeight: 600 }}>Image deleted</h2>
-                <p style={{ color: '#6b7280' }}>This screenshot been deleted sucsessfully.</p>
             </div>
         );
     }
@@ -230,22 +398,197 @@ const Preview = () => {
           }
 
           .tool-btn {
-            background: transparent;
-            border: none;
+            background: rgba(255, 255, 255, 0.2);
+            border: 1px solid rgba(255, 255, 255, 0.3);
             padding: 10px;
-            border-radius: 8px;
+            border-radius: 10px;
             cursor: pointer;
-            color: #6b7280;
+            color: white;
             display: flex;
             align-items: center;
             justify-content: center;
             transition: all 0.2s ease;
             margin-left: 8px;
+            backdrop-filter: blur(10px);
           }
           .tool-btn:hover {
-            background-color: #f3f4f6;
-            color: #111827;
-            transform: translateY(-1px);
+            background: rgba(255, 255, 255, 0.3);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+          }
+          .tool-btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+          }
+          
+          .tool-btn-wrapper {
+            position: relative;
+            display: inline-flex;
+          }
+          
+          .tooltip {
+            position: absolute;
+            bottom: -45px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.9);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease, transform 0.2s ease;
+            z-index: 10000;
+            backdrop-filter: blur(10px);
+          }
+          
+          .tooltip::before {
+            content: '';
+            position: absolute;
+            top: -4px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-bottom: 5px solid rgba(0, 0, 0, 0.9);
+          }
+          
+          .tool-btn-wrapper:hover .tooltip {
+            opacity: 1;
+            transform: translateX(-50%) translateY(2px);
+          }
+          
+          /* Header Button Styles */
+          .header-btn {
+            position: relative;
+            padding: 8px;
+            background: transparent;
+            border: none;
+            borderRadius: 8px;
+            cursor: pointer;
+            color: white;
+            transition: all 0.2s ease;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+          }
+          
+          .header-btn:hover {
+            background: rgba(255, 255, 255, 0.25) !important;
+            transform: translateY(-2px);
+          }
+          
+          .header-btn:active {
+            transform: translateY(0);
+          }
+          
+          .header-btn-delete {
+            color: #fca5a5;
+          }
+          
+          .header-btn-delete:hover {
+            background: rgba(239, 68, 68, 0.25) !important;
+            color: white !important;
+          }
+          
+          /* Header Tooltip Styles */
+          .header-tooltip-wrapper {
+            position: relative;
+            display: inline-flex;
+          }
+          
+          .header-tooltip {
+            position: absolute;
+            bottom: -35px;
+            left: 50%;
+            transform: translateX(-50%);
+            background: rgba(0, 0, 0, 0.95);
+            color: white;
+            padding: 6px 10px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-weight: 500;
+            white-space: nowrap;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease;
+            z-index: 10000;
+          }
+          
+          .header-tooltip::before {
+            content: '';
+            position: absolute;
+            top: -4px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 0;
+            height: 0;
+            border-left: 5px solid transparent;
+            border-right: 5px solid transparent;
+            border-bottom: 5px solid rgba(0, 0, 0, 0.95);
+          }
+          
+          .header-tooltip-wrapper:hover .header-tooltip {
+            opacity: 1;
+          }
+          
+          /* Download Button Styles */
+          .download-btn-pdf {
+            padding: 8px 16px;
+            background: rgba(255,255,255,0.2);
+            border: 1px solid rgba(255,255,255,0.4);
+            border-radius: 12px;
+            color: white;
+            cursor: pointer;
+            fontSize: 14px;
+            fontWeight: 600;
+            display: flex;
+            alignItems: center;
+            gap: 8px;
+            backdropFilter: blur(10px);
+            transition: all 0.2s ease;
+          }
+          
+          .download-btn-pdf:hover {
+            background: rgba(255,255,255,0.35) !important;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 16px rgba(0,0,0,0.15);
+          }
+          
+          .download-btn-pdf:active {
+            transform: translateY(0);
+          }
+          
+          .download-btn-png {
+            padding: 8px 16px;
+            background: white;
+            border: none;
+            border-radius: 12px;
+            color: #a855f7;
+            cursor: pointer;
+            fontSize: 14px;
+            fontWeight: 700;
+            display: flex;
+            alignItems: center;
+            gap: 8px;
+            boxShadow: 0 4px 12px rgba(0,0,0,0.2);
+            transition: all 0.2s ease;
+          }
+          
+          .download-btn-png:hover {
+            background: #f3f4f6 !important;
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(0,0,0,0.25);
+          }
+          
+          .download-btn-png:active {
+            transform: translateY(0);
           }
 
           @keyframes spin { from { transform: rotate(0deg); } to { transform: rotate(360deg); } }
@@ -321,7 +664,7 @@ const Preview = () => {
                         </div>
                         <h3 style={{ fontSize: '20px', marginBottom: '8px', fontFamily: 'sans-serif', fontWeight: 600, color: '#111827' }}>Delete Screenshot?</h3>
                         <p style={{ color: '#6b7280', marginBottom: '30px', fontFamily: 'sans-serif', lineHeight: 1.5 }}>This option cant to be undone.<br />Are you sure you want to proceed?</p>
-                        <div style={{ display: 'flex', justifyContent: 'center' }}>
+                        <div style={{ display: 'flex', justifyContent: 'center', gap: '12px' }}>
                             <button className="btn-secondary" onClick={() => setShowDeleteConfirm(false)}>No, Keep it</button>
                             <button className="btn-danger" onClick={confirmDelete}>Yes, Delete</button>
                         </div>
@@ -337,49 +680,105 @@ const Preview = () => {
                 overflow: 'hidden'
             }}>
 
-                {/* Top Header Bar */}
+                {/* Top Header Bar - New Gradient Design */}
                 <div style={{
                     position: 'fixed',
                     top: 0,
                     left: 0,
                     width: '100%',
-                    height: '80px',
-                    backgroundColor: '#ffffff',
-                    boxShadow: '0 1px 3px rgba(0,0,0,0.05)',
-                    zIndex: 50,
+                    background: 'linear-gradient(to right, #fb923c, #ec4899, #a855f7)',
+                    padding: '16px',
                     display: 'flex',
+                    flexDirection: 'row',
                     alignItems: 'center',
                     justifyContent: 'space-between',
-                    padding: '0 30px',
+                    color: 'white',
+                    boxShadow: '0 10px 40px rgba(0,0,0,0.2)',
+                    zIndex: 50,
                     boxSizing: 'border-box'
                 }}>
-                    {/* Logo on Left (Large) */}
-                    <img
-                        src="full.png"
-                        alt="FullGrab"
-                        style={{
-                            height: '100px',
-                            width: 'auto',
-                            objectFit: 'contain'
-                        }}
-                    />
+                    {/* Logo Section - Left */}
+                    <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '8px', userSelect: 'none' }}>
+                            {/* Icon */}
+                            <div style={{
+                                position: 'relative',
+                                width: '32px',
+                                height: '32px',
+                                borderRadius: '8px',
+                                background: 'white',
+                                display: 'flex',
+                                alignItems: 'center',
+                                justifyContent: 'center',
+                                boxShadow: '0 2px 4px rgba(0,0,0,0.1)'
+                            }}>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#a855f7" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <circle cx="12" cy="12" r="10" />
+                                    <path d="m14.31 8 5.74 9.94" />
+                                    <path d="M9.69 8h11.48" />
+                                    <path d="m7.38 12 5.74-9.94" />
+                                    <path d="M9.69 16 3.95 6.06" />
+                                    <path d="M14.31 16H2.83" />
+                                    <path d="m16.62 12-5.74 9.94" />
+                                </svg>
+                            </div>
 
-                    {/* Right Side Tools */}
-                    <div style={{ display: 'flex', alignItems: 'center', position: 'relative' }}>
-                        <button className="tool-btn" onClick={handleShare} disabled={isSharing} title="Share Link" style={{ marginRight: '8px' }}>
-                            {isSharing ? (
-                                <svg className="animate-spin" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"></path></svg>
-                            ) : (
-                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><circle cx="18" cy="5" r="3"></circle><circle cx="6" cy="12" r="3"></circle><circle cx="18" cy="19" r="3"></circle><line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line><line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line></svg>
-                            )}
-                        </button>
+                            {/* Brand Text */}
+                            <div style={{ display: 'flex', alignItems: 'baseline', lineHeight: 1 }}>
+                                <span style={{ fontSize: '24px', fontWeight: 700, letterSpacing: '-0.5px', color: 'white' }}>Full</span>
+                                <span style={{ fontSize: '24px', fontWeight: 700, letterSpacing: '-0.5px', color: '#a855f7' }}>Grab</span>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Center Actions (Edit, Share, Delete) */}
+                    <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '12px',
+                        backdropFilter: 'blur(10px)',
+                        backgroundColor: 'rgba(255,255,255,0.1)',
+                        padding: '8px',
+                        borderRadius: '16px',
+                        border: '1px solid rgba(255,255,255,0.2)'
+                    }}>
+                        {/* Edit Button */}
+                        <div className="header-tooltip-wrapper">
+                            <button className="header-btn" onClick={handleEdit}>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="m18.226 5.226-2.52-2.52A2.4 2.4 0 0 0 14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-.351" />
+                                    <path d="M21.378 12.626a1 1 0 0 0-3.004-3.004l-4.01 4.012a2 2 0 0 0-.506.854l-.837 2.87a.5.5 0 0 0 .62.62l2.87-.837a2 2 0 0 0 .854-.506z" />
+                                    <path d="M8 18h1" />
+                                </svg>
+                            </button>
+                            <span className="header-tooltip">Edit - Coming Soon</span>
+                        </div>
+
+                        <div style={{ width: '1px', height: '16px', background: 'rgba(255,255,255,0.3)' }}></div>
+
+                        {/* Share Button */}
+                        <div className="header-tooltip-wrapper">
+                            <button className="header-btn" onClick={handleShare} disabled={isSharing}>
+                                {isSharing ? (
+                                    <svg className="animate-spin" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
+                                        <path d="M12 2v4m0 12v4M4.93 4.93l2.83 2.83m8.48 8.48l2.83 2.83M2 12h4m12 0h4M4.93 19.07l2.83-2.83m8.48-8.48l2.83-2.83"></path>
+                                    </svg>
+                                ) : (
+                                    <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                        <path d="M13.19 8.688a4.5 4.5 0 0 1 1.242 7.244l-4.5 4.5a4.5 4.5 0 0 1-6.364-6.364l1.757-1.757m13.35-.622 1.757-1.757a4.5 4.5 0 0 0-6.364-6.364l-4.5 4.5a4.5 4.5 0 0 0 1.242 7.244" />
+                                    </svg>
+                                )}
+                            </button>
+                            <span className="header-tooltip">Share with link</span>
+                        </div>
 
                         {/* Shared Link Display */}
                         {sharedLink && (
                             <div style={{
                                 position: 'absolute',
-                                top: '60px',
-                                right: '0',
+                                top: '70px',
+                                left: '50%',
+                                transform: 'translateX(-50%)',
                                 background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
                                 borderRadius: '12px',
                                 padding: '16px 20px',
@@ -396,11 +795,11 @@ const Preview = () => {
                                     @keyframes slideDown {
                                         from {
                                             opacity: 0;
-                                            transform: translateY(-10px);
+                                            transform: translateX(-50%) translateY(-10px);
                                         }
                                         to {
                                             opacity: 1;
-                                            transform: translateY(0);
+                                            transform: translateX(-50%) translateY(0);
                                         }
                                     }
                                     .copy-btn-modern {
@@ -448,10 +847,7 @@ const Preview = () => {
                                     />
                                     <button
                                         className="copy-btn-modern"
-                                        onClick={() => {
-                                            navigator.clipboard.writeText(sharedLink);
-                                            setSharedLink(null);
-                                        }}
+                                        onClick={handleCopyLink}
                                         style={{
                                             padding: '10px 16px',
                                             backgroundColor: 'rgba(255,255,255,0.95)',
@@ -477,19 +873,52 @@ const Preview = () => {
                             </div>
                         )}
 
-                        <button className="tool-btn" onClick={handleEdit} title="Edit">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"></path><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"></path></svg>
-                        </button>
-                        <button className="tool-btn" onClick={requestDelete} title="Delete" style={{ color: '#ef4444' }}>
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><polyline points="3 6 5 6 21 6"></polyline><path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6m3 0V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2"></path></svg>
-                        </button>
-                        <div style={{ width: '1px', height: '24px', background: '#e5e7eb', margin: '0 12px' }}></div>
-                        <button className="tool-btn" onClick={handleDownloadPDF} title="Download PDF">
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path><polyline points="14 2 14 8 20 8"></polyline><line x1="16" y1="13" x2="8" y2="13"></line><line x1="16" y1="17" x2="8" y2="17"></line><polyline points="10 9 9 9 8 9"></polyline></svg>
-                        </button>
-                        <button className="tool-btn" onClick={handleDownloadPNG} title="Download PNG" style={{ color: '#2563eb', background: '#eff6ff' }}>
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path><polyline points="7 10 12 15 17 10"></polyline><line x1="12" y1="15" x2="12" y2="3"></line></svg>
-                        </button>
+                        <div style={{ width: '1px', height: '16px', background: 'rgba(255,255,255,0.3)' }}></div>
+
+                        {/* Delete Button */}
+                        <div className="header-tooltip-wrapper">
+                            <button className="header-btn header-btn-delete" onClick={requestDelete}>
+                                <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M10 11v6" />
+                                    <path d="M14 11v6" />
+                                    <path d="M19 6v14a2 2 0 0 1-2 2H7a2 2 0 0 1-2-2V6" />
+                                    <path d="M3 6h18" />
+                                    <path d="M8 6V4a2 2 0 0 1 2-2h4a2 2 0 0 1 2 2v2" />
+                                </svg>
+                            </button>
+                            <span className="header-tooltip">Delete image</span>
+                        </div>
+                    </div>
+
+                    {/* Right Actions (Download Buttons) */}
+                    <div style={{ display: 'flex', gap: '12px' }}>
+                        {/* PDF Button */}
+                        <div className="header-tooltip-wrapper">
+                            <button className="download-btn-pdf" onClick={handleDownloadPDF}>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"></path>
+                                    <polyline points="14 2 14 8 20 8"></polyline>
+                                    <line x1="16" y1="13" x2="8" y2="13"></line>
+                                    <line x1="16" y1="17" x2="8" y2="17"></line>
+                                    <line x1="10" y1="9" x2="8" y2="9"></line>
+                                </svg>
+                                PDF
+                            </button>
+                            <span className="header-tooltip">Download as PDF</span>
+                        </div>
+
+                        {/* PNG Button */}
+                        <div className="header-tooltip-wrapper">
+                            <button className="download-btn-png" onClick={handleDownloadPNG}>
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                                    <rect x="3" y="3" width="18" height="18" rx="2" ry="2"></rect>
+                                    <circle cx="8.5" cy="8.5" r="1.5"></circle>
+                                    <polyline points="21 15 16 10 5 21"></polyline>
+                                </svg>
+                                PNG
+                            </button>
+                            <span className="header-tooltip">Download as PNG</span>
+                        </div>
                     </div>
                 </div>
 
@@ -560,6 +989,214 @@ const Preview = () => {
                     </div>
                 </div>
             </div>
+
+            {/* Toast Notification */}
+            {showToast && (
+                <div style={{
+                    position: 'fixed',
+                    bottom: '30px',
+                    right: '30px',
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    color: 'white',
+                    padding: '16px 20px',
+                    borderRadius: '12px',
+                    boxShadow: '0 10px 40px rgba(102, 126, 234, 0.4)',
+                    zIndex: 10000,
+                    minWidth: '320px',
+                    animation: 'slideInRight 0.3s ease-out',
+                    overflow: 'hidden'
+                }}>
+                    <style>{`
+                        @keyframes slideInRight {
+                            from {
+                                opacity: 0;
+                                transform: translateX(100px);
+                            }
+                            to {
+                                opacity: 1;
+                                transform: translateX(0);
+                            }
+                        }
+                        @keyframes countdownBar {
+                            from {
+                                width: 100%;
+                            }
+                            to {
+                                width: 0%;
+                            }
+                        }
+                    `}</style>
+
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px' }}>
+                        {/* Success Icon */}
+                        <div style={{
+                            width: '40px',
+                            height: '40px',
+                            backgroundColor: 'rgba(255,255,255,0.2)',
+                            borderRadius: '50%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0
+                        }}>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                <polyline points="20 6 9 17 4 12"></polyline>
+                            </svg>
+                        </div>
+
+                        <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: '15px', fontWeight: '600', marginBottom: '2px' }}>
+                                Success!
+                            </div>
+                            <div style={{ fontSize: '13px', opacity: 0.9 }}>
+                                Link copied to clipboard
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Progress Bar */}
+                    <div style={{
+                        position: 'absolute',
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        height: '4px',
+                        backgroundColor: 'rgba(255,255,255,0.2)'
+                    }}>
+                        <div style={{
+                            height: '100%',
+                            backgroundColor: 'white',
+                            animation: 'countdownBar 5s linear forwards'
+                        }}></div>
+                    </div>
+                </div>
+            )}
+
+            {/* Edit Coming Soon Toast */}
+            {showEditToast && (
+                <div style={{
+                    position: 'fixed',
+                    bottom: '30px',
+                    right: '30px',
+                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
+                    color: 'white',
+                    padding: '16px 20px',
+                    borderRadius: '12px',
+                    boxShadow: '0 10px 40px rgba(102, 126, 234, 0.4)',
+                    zIndex: 10000,
+                    minWidth: '320px',
+                    animation: 'slideInRight 0.3s ease-out',
+                    overflow: 'hidden'
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px' }}>
+                        {/* Info Icon */}
+                        <div style={{
+                            width: '40px',
+                            height: '40px',
+                            backgroundColor: 'rgba(255,255,255,0.2)',
+                            borderRadius: '50%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0
+                        }}>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                <circle cx="12" cy="12" r="10"></circle>
+                                <line x1="12" y1="16" x2="12" y2="12"></line>
+                                <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                            </svg>
+                        </div>
+
+                        <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: '15px', fontWeight: '600', marginBottom: '2px' }}>
+                                Coming Soon!
+                            </div>
+                            <div style={{ fontSize: '13px', opacity: 0.9 }}>
+                                Edit feature is under development
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Progress Bar */}
+                    <div style={{
+                        position: 'absolute',
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        height: '4px',
+                        backgroundColor: 'rgba(255,255,255,0.2)'
+                    }}>
+                        <div style={{
+                            height: '100%',
+                            backgroundColor: 'white',
+                            animation: 'countdownBar 3s linear forwards'
+                        }}></div>
+                    </div>
+                </div>
+            )}
+
+            {/* Download Success Toast */}
+            {showDownloadToast && (
+                <div style={{
+                    position: 'fixed',
+                    bottom: '30px',
+                    right: '30px',
+                    background: 'linear-gradient(135deg, #10b981 0%, #059669 100%)',
+                    color: 'white',
+                    padding: '16px 20px',
+                    borderRadius: '12px',
+                    boxShadow: '0 10px 40px rgba(16, 185, 129, 0.4)',
+                    zIndex: 10000,
+                    minWidth: '320px',
+                    animation: 'slideInRight 0.3s ease-out',
+                    overflow: 'hidden'
+                }}>
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px' }}>
+                        {/* Download Icon */}
+                        <div style={{
+                            width: '40px',
+                            height: '40px',
+                            backgroundColor: 'rgba(255,255,255,0.2)',
+                            borderRadius: '50%',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            flexShrink: 0
+                        }}>
+                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                        </div>
+
+                        <div style={{ flex: 1 }}>
+                            <div style={{ fontSize: '15px', fontWeight: '600', marginBottom: '2px' }}>
+                                Download Complete!
+                            </div>
+                            <div style={{ fontSize: '13px', opacity: 0.9 }}>
+                                {downloadFormat} downloaded successfully
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Progress Bar */}
+                    <div style={{
+                        position: 'absolute',
+                        bottom: 0,
+                        left: 0,
+                        right: 0,
+                        height: '4px',
+                        backgroundColor: 'rgba(255,255,255,0.2)'
+                    }}>
+                        <div style={{
+                            height: '100%',
+                            backgroundColor: 'white',
+                            animation: 'countdownBar 3s linear forwards'
+                        }}></div>
+                    </div>
+                </div>
+            )}
         </>
     );
 };
