@@ -20,18 +20,41 @@ async function setupOffscreenDocument(path) {
 
 // Inject content script if not present
 async function ensureContentScript(tabId) {
-  try {
-    // Check by pinging
-    await chrome.tabs.sendMessage(tabId, { type: 'PING' });
-  } catch (err) {
-    console.log('Injecting content script into tab', tabId);
-    await chrome.scripting.executeScript({
-      target: { tabId },
-      files: ['content.js']
-    });
-    // Wait for script to initialize
-    await new Promise(r => setTimeout(r, 250));
+  const maxRetries = 3;
+  const retryDelay = 300;
+
+  for (let i = 0; i < maxRetries; i++) {
+    try {
+      // Try to ping the content script
+      await chrome.tabs.sendMessage(tabId, { type: 'PING' });
+      console.log('Content script is ready on tab', tabId);
+      return; // Success - script is ready
+    } catch (err) {
+      console.log(`Ping attempt ${i + 1}/${maxRetries} failed for tab ${tabId}`);
+
+      // On first failure, inject the script
+      if (i === 0) {
+        console.log('Injecting content script into tab', tabId);
+        try {
+          await chrome.scripting.executeScript({
+            target: { tabId },
+            files: ['content.js']
+          });
+        } catch (injectErr) {
+          console.error('Failed to inject content script:', injectErr);
+          throw injectErr;
+        }
+      }
+
+      // Wait before retrying (except on last attempt)
+      if (i < maxRetries - 1) {
+        await new Promise(r => setTimeout(r, retryDelay));
+      }
+    }
   }
+
+  // If we get here, all retries failed
+  throw new Error('Content script failed to respond after multiple attempts');
 }
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
