@@ -1,7 +1,7 @@
 {
-  "name": "FullGrab - Full Page Capture. Smart Privacy. Instant Sharing",
-  "version": "1.0.0",
-  "description": "Professional screen capture tool for visible area and full page screenshots.",
+  "name": "FullGrab - Screenshot & Full Page Capture",
+  "version": "1.0.1",
+  "description": "Capture visible area and full-page screenshots. Download as PNG or PDF. Share instantly with generated links.",
   "manifest_version": 3,
   "action": {
     "default_popup": "popup.html",
@@ -31,8 +31,6 @@
   "web_accessible_resources": [
     {
       "resources": [
-        "preview.html",
-        "offscreen.html",
         "assets/*"
       ],
       "matches": [
