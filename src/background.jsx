@@ -137,8 +137,8 @@ async function handleCaptureFullPage() {
     let { fullHeight, clientHeight, devicePixelRatio, originalScrollY, width } = info;
 
     // Initial Max calculations
-    // Limit: 15 screens (increased count due to overlap strategy reducing effectively covered area per shot)
-    const maxScroll = Math.min(fullHeight, clientHeight * 15);
+    // Limit: 30 screens (increased count due to overlap strategy reducing effectively covered area per shot)
+    const maxScroll = Math.min(fullHeight, clientHeight * 30);
     const OVERLAP = 80; // 80px overlap to ensure no seams and robust header handling
 
     const captures = [];
@@ -156,8 +156,8 @@ async function handleCaptureFullPage() {
 
       const realY = scrollRes.currentScrollY;
 
-      // Wait for rendering (extra safety)
-      await new Promise(r => setTimeout(r, 350));
+      // Wait for rendering and lazy-loaded images
+      await new Promise(r => setTimeout(r, 500));
 
       // Capture
       const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, { format: 'png' });
@@ -170,7 +170,7 @@ async function handleCaptureFullPage() {
       }
 
       // Infinite Scroll Safety Guard
-      if (screenCount >= 20) { // Safety limit increased
+      if (screenCount >= 30) { // Safety limit increased to 30
         console.warn("Reached screen limit.");
         break;
       }

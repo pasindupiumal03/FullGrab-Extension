@@ -28,7 +28,7 @@
     "css-loader": "^6.8.1",
     "fabric": "^6.9.1",
     "file-loader": "^6.2.0",
-    "jspdf": "^3.0.4",
+    "jspdf": "^2.5.2",
     "postcss": "^8.5.0",
     "postcss-loader": "^8.1.1",
     "postcss-preset-env": "^10.1.4",

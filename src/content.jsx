@@ -64,6 +64,19 @@ if (!window.hasCapturelyListener) {
             // Skip hidden inputs or already hidden stuff
             if (style.display === 'none' || style.visibility === 'hidden' || style.opacity === '0') continue;
 
+            // Only hide elements that are sticky/fixed at the TOP or BOTTOM
+            // Do NOT hide sticky columns (left/right)
+            const rect = node.getBoundingClientRect();
+            const isTopOrBottom = (
+                (style.top !== 'auto' && style.top !== '' && parseFloat(style.top) < 100) || // Sticky/fixed to top
+                (style.bottom !== 'auto' && style.bottom !== '' && parseFloat(style.bottom) < 100) // Sticky/fixed to bottom
+            );
+
+            // Skip left/right sticky elements (like sticky table columns)
+            if (!isTopOrBottom) {
+                continue;
+            }
+
             // Store original state
             hiddenElements.set(node, {
                 visibility: node.style.visibility,
