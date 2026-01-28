@@ -2,8 +2,6 @@ import React, { useEffect, useState } from 'react';
 import { createRoot } from 'react-dom/client';
 import { jsPDF } from "jspdf";
 
-import ImageEditor from './components/ImageEditor';
-
 const Preview = () => {
     const [image, setImage] = useState(null);
     const [captures, setCaptures] = useState([]);
@@ -14,7 +12,6 @@ const Preview = () => {
     const [isEditing, setIsEditing] = useState(false);
     const [sharedLink, setSharedLink] = useState(null);
     const [showToast, setShowToast] = useState(false);
-    const [showEditToast, setShowEditToast] = useState(false);
     const [showDownloadToast, setShowDownloadToast] = useState(false);
     const [downloadFormat, setDownloadFormat] = useState('');
     const [pageInfo, setPageInfo] = useState({ title: 'Screenshot', url: '' });
@@ -227,12 +224,8 @@ const Preview = () => {
     };
 
     const handleEdit = () => {
-        setShowEditToast(true);
-
-        // Auto-hide toast after 3 seconds
-        setTimeout(() => {
-            setShowEditToast(false);
-        }, 3000);
+        // Open edit page in a new tab
+        chrome.tabs.create({ url: 'edit.html' });
     };
 
     const handleEditorSave = async (newImage) => {
@@ -751,7 +744,7 @@ const Preview = () => {
                                     <path d="M8 18h1" />
                                 </svg>
                             </button>
-                            <span className="header-tooltip">Edit - Coming Soon</span>
+                            <span className="header-tooltip">Edit</span>
                         </div>
 
                         <div style={{ width: '1px', height: '16px', background: 'rgba(255,255,255,0.3)' }}></div>
@@ -1067,69 +1060,6 @@ const Preview = () => {
                             height: '100%',
                             backgroundColor: 'white',
                             animation: 'countdownBar 5s linear forwards'
-                        }}></div>
-                    </div>
-                </div>
-            )}
-
-            {/* Edit Coming Soon Toast */}
-            {showEditToast && (
-                <div style={{
-                    position: 'fixed',
-                    bottom: '30px',
-                    right: '30px',
-                    background: 'linear-gradient(135deg, #667eea 0%, #764ba2 100%)',
-                    color: 'white',
-                    padding: '16px 20px',
-                    borderRadius: '12px',
-                    boxShadow: '0 10px 40px rgba(102, 126, 234, 0.4)',
-                    zIndex: 10000,
-                    minWidth: '320px',
-                    animation: 'slideInRight 0.3s ease-out',
-                    overflow: 'hidden'
-                }}>
-                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '10px' }}>
-                        {/* Info Icon */}
-                        <div style={{
-                            width: '40px',
-                            height: '40px',
-                            backgroundColor: 'rgba(255,255,255,0.2)',
-                            borderRadius: '50%',
-                            display: 'flex',
-                            alignItems: 'center',
-                            justifyContent: 'center',
-                            flexShrink: 0
-                        }}>
-                            <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="3" strokeLinecap="round" strokeLinejoin="round">
-                                <circle cx="12" cy="12" r="10"></circle>
-                                <line x1="12" y1="16" x2="12" y2="12"></line>
-                                <line x1="12" y1="8" x2="12.01" y2="8"></line>
-                            </svg>
-                        </div>
-
-                        <div style={{ flex: 1 }}>
-                            <div style={{ fontSize: '15px', fontWeight: '600', marginBottom: '2px' }}>
-                                Coming Soon!
-                            </div>
-                            <div style={{ fontSize: '13px', opacity: 0.9 }}>
-                                Edit feature is under development
-                            </div>
-                        </div>
-                    </div>
-
-                    {/* Progress Bar */}
-                    <div style={{
-                        position: 'absolute',
-                        bottom: 0,
-                        left: 0,
-                        right: 0,
-                        height: '4px',
-                        backgroundColor: 'rgba(255,255,255,0.2)'
-                    }}>
-                        <div style={{
-                            height: '100%',
-                            backgroundColor: 'white',
-                            animation: 'countdownBar 3s linear forwards'
                         }}></div>
                     </div>
                 </div>

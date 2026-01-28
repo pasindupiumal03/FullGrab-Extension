@@ -71,6 +71,19 @@ async function handleCaptureVisible() {
     const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
     if (!tab) return;
 
+    // Inject content script
+    await ensureContentScript(tab.id);
+
+    // Apply sensitive content blur
+    try {
+      await chrome.tabs.sendMessage(tab.id, { type: 'PREPARE_CAPTURE' });
+    } catch (e) {
+      console.warn('Could not blur sensitive content:', e);
+    }
+
+    // Wait a moment for blur to apply
+    await new Promise(r => setTimeout(r, 100));
+
     // CSS to hide scrollbars - More aggressive
     const css = `
       html, body {
@@ -104,6 +117,13 @@ async function handleCaptureVisible() {
       target: { tabId: tab.id },
       css: css
     }).catch(err => console.warn("Failed to remove CSS:", err));
+
+    // Remove blur
+    try {
+      await chrome.tabs.sendMessage(tab.id, { type: 'FINISH_CAPTURE' });
+    } catch (e) {
+      console.warn('Could not remove blur:', e);
+    }
 
     // Clear storage first to avoid quota issues with old data
     await chrome.storage.local.remove(['capturedImage', 'originalCaptures']);
