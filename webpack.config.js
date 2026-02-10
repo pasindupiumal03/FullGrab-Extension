@@ -9,6 +9,7 @@ module.exports = {
     content: "./src/content.jsx",
     background: "./src/background.jsx",
     preview: "./src/preview.jsx",
+    edit: "./src/edit.jsx",
     offscreen: "./src/offscreen.js",
     "shadow-root": "./src/shadow-root.css",
   },
@@ -72,6 +73,11 @@ module.exports = {
       template: "./src/preview.html",
       filename: "preview.html",
       chunks: ["preview"],
+    }),
+    new HtmlWebpackPlugin({
+      template: "./src/edit.html",
+      filename: "edit.html",
+      chunks: ["edit"],
     }),
     new HtmlWebpackPlugin({
       template: "./src/offscreen.html",
