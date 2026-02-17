@@ -11,6 +11,7 @@ module.exports = {
     preview: "./src/preview.jsx",
     edit: "./src/edit.jsx",
     offscreen: "./src/offscreen.js",
+    "auth-callback": "./src/auth-callback.jsx",
     "shadow-root": "./src/shadow-root.css",
   },
   output: {
@@ -49,15 +50,12 @@ module.exports = {
             loader: "postcss-loader",
             options: {
               postcssOptions: {
-                plugins: [
-                  "tailwindcss",
-                  "autoprefixer",
-                ],
+                plugins: ["tailwindcss", "autoprefixer"],
               },
             },
           },
         ],
-      }
+      },
     ],
   },
   resolve: {
@@ -83,6 +81,11 @@ module.exports = {
       template: "./src/offscreen.html",
       filename: "offscreen.html",
       chunks: ["offscreen"],
+    }),
+    new HtmlWebpackPlugin({
+      template: "./src/auth-callback.html",
+      filename: "auth-callback.html",
+      chunks: ["auth-callback"],
     }),
     new MiniCssExtractPlugin({
       filename: "[name].css",
