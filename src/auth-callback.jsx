@@ -18,30 +18,29 @@ const AuthCallback = () => {
     // Explicitly handle payment success redirect from Hub
     if (params.get("payment_success") === "true") {
       setStatus("success");
-      setTimeout(async () => {
-        try {
-          await chrome.runtime.sendMessage({ type: "PAYMENT_SUCCESS" });
-        } catch (e) {
-          console.error("Failed to notify background", e);
-        }
+      // Notify background IMMEDIATELY to refresh status
+      chrome.runtime.sendMessage({ type: "PAYMENT_SUCCESS" }).catch((e) => {
+        console.error("Failed to notify background", e);
+      });
+
+      setTimeout(() => {
         window.close();
-      }, 1500);
+      }, 2000);
       return;
     }
 
     const result = await authService.handleCallback(window.location.href);
 
     if (result.success) {
-      try {
-        // Explicitly notify background to refresh status
-        await chrome.runtime.sendMessage({ type: "PAYMENT_SUCCESS" });
-      } catch (e) {
+      // Explicitly notify background to refresh status IMMEDIATELY
+      chrome.runtime.sendMessage({ type: "PAYMENT_SUCCESS" }).catch((e) => {
         console.error("Failed to notify background", e);
-      }
+      });
+
       setStatus("success");
       setTimeout(() => {
         window.close();
-      }, 1500);
+      }, 2000);
     } else {
       setStatus("error");
       setError(result.error || "Authentication failed");

@@ -1,7 +1,7 @@
-export const HUB_URL = "http://localhost:3000"; // Use localhost for dev, update for prod
+export const HUB_URL = "https://extensions-hub-theta.vercel.app";
 export const APP_ID = "fullgrab";
 export const TRIAL_DURATION_DAYS = 20;
-export const ENTITLEMENT_CACHE_TTL = 120000; // 2 minutes
+export const ENTITLEMENT_CACHE_TTL = 120000; // 2 minutes cache time
 
 export const STORAGE_KEYS = {
   AUTH: "fullgrab_auth",

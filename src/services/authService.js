@@ -51,6 +51,15 @@ class AuthService {
       console.error("Logout API call failed", e);
     } finally {
       await chrome.storage.local.remove(AuthService.STORAGE_KEY);
+      // Clear entitlement cache on logout to prevent stale premium status
+      try {
+        await chrome.cookies.remove({
+          url: HUB_URL,
+          name: STORAGE_KEYS.ENTITLEMENT_CACHE,
+        });
+      } catch (e) {
+        console.error("Failed to clear entitlement cache on logout", e);
+      }
     }
   }
 
