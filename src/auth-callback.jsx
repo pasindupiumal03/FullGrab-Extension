@@ -1,6 +1,7 @@
 import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import { authService } from "./services/authService";
+import { SUCCESS_REDIRECT_DELAY } from "./constants/config";
 import "./index.css";
 
 const AuthCallback = () => {
@@ -14,25 +15,25 @@ const AuthCallback = () => {
   const handleCallback = async () => {
     const params = new URLSearchParams(window.location.search);
 
-    // Handle Payment Success
+    // Explicitly handle payment success redirect from Hub
     if (params.get("payment_success") === "true") {
-      try {
-        await chrome.runtime.sendMessage({ type: "PAYMENT_SUCCESS" });
-        setStatus("success");
-        setTimeout(() => window.close(), 2000);
-      } catch (e) {
-        console.error("Failed to notify background", e);
-        setStatus("success");
-        setTimeout(() => window.close(), 2000);
-      }
+      setStatus("success");
+      setTimeout(async () => {
+        try {
+          await chrome.runtime.sendMessage({ type: "PAYMENT_SUCCESS" });
+        } catch (e) {
+          console.error("Failed to notify background", e);
+        }
+        window.close();
+      }, 1500);
       return;
     }
 
-    // Handle Auth Callback
     const result = await authService.handleCallback(window.location.href);
 
     if (result.success) {
       try {
+        // Explicitly notify background to refresh status
         await chrome.runtime.sendMessage({ type: "PAYMENT_SUCCESS" });
       } catch (e) {
         console.error("Failed to notify background", e);

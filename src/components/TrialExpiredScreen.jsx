@@ -14,19 +14,27 @@ const TrialExpiredScreen = ({ isPopup = false }) => {
   };
 
   const handleAction = async () => {
-    if (isAuthenticated) {
-      // User is signed in but no premium access -> Go to plans
-      try {
-        await chrome.runtime.sendMessage({ type: "INITIATE_UPGRADE" });
-      } catch (err) {
-        console.error("Failed to initiate upgrade:", err);
+    console.log(
+      "[TrialExpiredScreen] Action triggered, isAuthenticated:",
+      isAuthenticated
+    );
+    try {
+      if (isAuthenticated) {
+        // User is signed in but no premium access -> Go to plans
+        await authService.initiateUpgrade();
+      } else {
+        // User is not signed in -> High level sign in request
+        await authService.initiateLogin();
       }
-    } else {
-      // User is not signed in -> High level sign in request
+    } catch (err) {
+      console.error("Failed to initiate auth action:", err);
+      // Fallback to message passing if direct call fails
       try {
-        await chrome.runtime.sendMessage({ type: "INITIATE_LOGIN" });
-      } catch (err) {
-        console.error("Failed to initiate login:", err);
+        await chrome.runtime.sendMessage({
+          type: isAuthenticated ? "INITIATE_UPGRADE" : "INITIATE_LOGIN",
+        });
+      } catch (msgErr) {
+        console.error("Fallback message passing also failed:", msgErr);
       }
     }
   };

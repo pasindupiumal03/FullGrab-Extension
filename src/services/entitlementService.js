@@ -8,6 +8,8 @@ import {
 } from "../constants/config";
 
 class EntitlementService {
+  static CACHE_KEY = STORAGE_KEYS.ENTITLEMENT_CACHE;
+
   constructor() {
     this.initTrial();
   }
@@ -21,7 +23,7 @@ class EntitlementService {
         [STORAGE_KEYS.LAST_USED]: Date.now(),
       });
     } else {
-      // Update last used on service initialization (app startup)
+      // Update last used on service initialization
       await chrome.storage.local.set({
         [STORAGE_KEYS.LAST_USED]: Date.now(),
       });
@@ -30,16 +32,12 @@ class EntitlementService {
 
   // Check if the user has access (Premium OR Trial Active)
   async hasAccess() {
-    console.log("[Entitlement] Checking access...");
-
     // 1. Check Premium
     const isPremium = await this.checkPremium();
-    console.log("[Entitlement] isPremium:", isPremium);
     if (isPremium) return true;
 
     // 2. Check Trial
     const isTrialValid = await this.checkTrialStatus();
-    console.log("[Entitlement] isTrialValid:", isTrialValid);
     return isTrialValid;
   }
 
@@ -47,12 +45,8 @@ class EntitlementService {
   async checkTrialStatus() {
     const data = await chrome.storage.local.get([STORAGE_KEYS.TRIAL_START]);
     const startDate = data[STORAGE_KEYS.TRIAL_START];
-    console.log("[Entitlement] Trial Start Date form storage:", startDate);
-    console.log("[Entitlement] Current Date:", Date.now());
 
     if (!startDate) {
-      console.log("[Entitlement] No start date, initializing...");
-      // Should have been initialized, but safe fallback
       await this.initTrial();
       return true;
     }
@@ -85,13 +79,13 @@ class EntitlementService {
     };
   }
 
-  // Check if user has premium access (cached or API)
+  // Check if user has premium access
   async checkPremium() {
     try {
-      // Check if user is authenticated
       const isAuth = await authService.isAuthenticated();
       if (!isAuth) {
-        return false; // Not logged in = not premium
+        console.log("[Entitlement] User not authenticated, free tier.");
+        return false;
       }
 
       // Check cache first
@@ -100,6 +94,9 @@ class EntitlementService {
         return cached.isPremium;
       }
 
+      console.log(
+        "[Entitlement] Cache expired or missing, fetching from API..."
+      );
       // Fetch from API
       const isPremium = await this.fetchPremiumStatus();
 
@@ -108,19 +105,18 @@ class EntitlementService {
 
       return isPremium;
     } catch (error) {
-      console.error("Premium check failed:", error);
-      return false; // Fallback to free tier on error
+      console.error("[Entitlement] Premium check failed:", error);
+      return false;
     }
   }
 
-  // Fetch premium status from Hub API
+  // Fetch status from API
   async fetchPremiumStatus() {
     const response = await authService.fetchWithAuth(
       `${HUB_URL}/api/entitlements?appId=${APP_ID}`
     );
 
     if (!response.ok) {
-      // If 401, token might be expired or invalid, handle gracefully
       if (response.status === 401) return false;
       throw new Error(`API request failed: ${response.status}`);
     }
@@ -129,19 +125,17 @@ class EntitlementService {
     return data.isPremium || false;
   }
 
-  // Get cached entitlement data from cookies
+  // Get cached entitlement from cookies
   async getCache() {
     try {
       const cookie = await chrome.cookies.get({
         url: HUB_URL,
-        name: STORAGE_KEYS.ENTITLEMENT_CACHE,
+        name: EntitlementService.CACHE_KEY,
       });
 
       if (!cookie) return null;
 
-      // Parse the cookie value
-      const cache = JSON.parse(decodeURIComponent(cookie.value));
-      return cache;
+      return JSON.parse(decodeURIComponent(cookie.value));
     } catch (e) {
       console.error("Failed to read entitlement cookie", e);
       return null;
@@ -150,7 +144,15 @@ class EntitlementService {
 
   // Check if cache is still valid
   isCacheValid(cache) {
-    return Date.now() - cache.timestamp < ENTITLEMENT_CACHE_TTL;
+    const isValid = Date.now() - cache.timestamp < ENTITLEMENT_CACHE_TTL;
+    console.log(
+      "[Entitlement] Is cache valid?",
+      isValid,
+      "(Age:",
+      Math.round((Date.now() - cache.timestamp) / 1000),
+      "s)"
+    );
+    return isValid;
   }
 
   // Update cached entitlement data in cookies
@@ -162,9 +164,9 @@ class EntitlementService {
 
     await chrome.cookies.set({
       url: HUB_URL,
-      name: STORAGE_KEYS.ENTITLEMENT_CACHE,
+      name: EntitlementService.CACHE_KEY,
       value: encodeURIComponent(value),
-      expirationDate: (Date.now() + ENTITLEMENT_CACHE_TTL) / 1000, // Unix timestamp in seconds
+      expirationDate: (Date.now() + ENTITLEMENT_CACHE_TTL) / 1000,
       path: "/",
       sameSite: "lax",
       secure: HUB_URL.startsWith("https"),
@@ -175,15 +177,13 @@ class EntitlementService {
   async clearCache() {
     await chrome.cookies.remove({
       url: HUB_URL,
-      name: STORAGE_KEYS.ENTITLEMENT_CACHE,
+      name: EntitlementService.CACHE_KEY,
     });
   }
 
   // Force refresh premium status (bypasses cache)
   async refresh() {
     await this.clearCache();
-    // Also init trial to be safe
-    await this.initTrial();
     return this.checkPremium();
   }
 }

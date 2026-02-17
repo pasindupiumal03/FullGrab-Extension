@@ -1,16 +1,21 @@
 // Background script
 import { authService } from "./services/authService";
 import { entitlementService } from "./services/entitlementService";
+import { ENTITLEMENT_CACHE_TTL } from "./constants/config";
 
-// Ensure services are initialized
-(async () => {
+chrome.runtime.onInstalled.addListener(async () => {
+  console.log("[Background] Extension installed/updated");
   await entitlementService.initTrial();
-})();
+});
+
+chrome.runtime.onStartup.addListener(async () => {
+  console.log("[Background] Browser startup");
+});
 
 // Ensure offscreen document exists
 async function setupOffscreenDocument(path) {
   const existingContexts = await chrome.runtime.getContexts({
-    contextTypes: ["OFFSCREEN_DOCUMENT"]
+    contextTypes: ["OFFSCREEN_DOCUMENT"],
   });
 
   if (existingContexts.length > 0) {
@@ -20,7 +25,7 @@ async function setupOffscreenDocument(path) {
   await chrome.offscreen.createDocument({
     url: path,
     reasons: ["BLOBS"],
-    justification: "Stitching screenshots"
+    justification: "Stitching screenshots",
   });
 }
 
@@ -36,7 +41,9 @@ async function ensureContentScript(tabId) {
       console.log("Content script is ready on tab", tabId);
       return; // Success - script is ready
     } catch (err) {
-      console.log(`Ping attempt ${i + 1}/${maxRetries} failed for tab ${tabId}`);
+      console.log(
+        `Ping attempt ${i + 1}/${maxRetries} failed for tab ${tabId}`
+      );
 
       // On first failure, inject the script
       if (i === 0) {
@@ -44,7 +51,7 @@ async function ensureContentScript(tabId) {
         try {
           await chrome.scripting.executeScript({
             target: { tabId },
-            files: ["content.js"]
+            files: ["content.js"],
           });
         } catch (injectErr) {
           console.error("Failed to inject content script:", injectErr);
@@ -64,31 +71,63 @@ async function ensureContentScript(tabId) {
 }
 
 chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
-  if (request.type === "CAPTURE_VISIBLE") {
-    handleCaptureVisible();
-  } else if (request.type === "CAPTURE_FULL_PAGE") {
-    handleCaptureFullPage();
-  } else if (request.type === "INITIATE_LOGIN") {
-    authService.initiateLogin().then(() => sendResponse({ ok: true }));
-    return true; // async response
-  } else if (request.type === "INITIATE_UPGRADE") {
-    authService.initiateUpgrade().then(() => sendResponse({ ok: true }));
-    return true; // async response
-  } else if (request.type === "PAYMENT_SUCCESS") {
-    entitlementService.refresh().then(() => {
-      // Optionally notify popup or reload
-      sendResponse({ ok: true });
-    });
-    return true; // async response
-  }
-  return true;
+  (async () => {
+    try {
+      if (!request || !request.type) return;
+
+      console.log(`[Background] Received message: ${request.type}`);
+
+      switch (request.type) {
+        case "CAPTURE_VISIBLE":
+          await handleCaptureVisible();
+          sendResponse({ ok: true });
+          break;
+
+        case "CAPTURE_FULL_PAGE":
+          await handleCaptureFullPage();
+          sendResponse({ ok: true });
+          break;
+
+        case "PAYMENT_SUCCESS":
+          await entitlementService.refresh();
+          sendResponse({ ok: true });
+          break;
+
+        case "INITIATE_LOGIN":
+          await authService.initiateLogin();
+          sendResponse({ ok: true });
+          break;
+
+        case "INITIATE_UPGRADE":
+          await authService.initiateUpgrade();
+          sendResponse({ ok: true });
+          break;
+
+        case "PING":
+          sendResponse({ ok: true });
+          break;
+
+        default:
+          console.warn(`[Background] Unknown message type: ${request.type}`);
+          sendResponse({ ok: false, error: "Unknown message type" });
+      }
+    } catch (err) {
+      console.error(
+        `[Background] Error handling message ${request?.type}:`,
+        err
+      );
+      sendResponse({ ok: false, error: err.message });
+    }
+  })();
+
+  return true; // Keep channel open for async response
 });
 
 async function handleCaptureVisible() {
   try {
     const [tab] = await chrome.tabs.query({
       active: true,
-      currentWindow: true
+      currentWindow: true,
     });
     if (!tab) return;
 
@@ -124,7 +163,7 @@ async function handleCaptureVisible() {
     await chrome.scripting
       .insertCSS({
         target: { tabId: tab.id },
-        css: css
+        css: css,
       })
       .catch((err) => console.warn("Failed to inject CSS:", err));
 
@@ -134,14 +173,14 @@ async function handleCaptureVisible() {
 
     // Capture
     const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, {
-      format: "png"
+      format: "png",
     });
 
     // Remove CSS
     await chrome.scripting
       .removeCSS({
         target: { tabId: tab.id },
-        css: css
+        css: css,
       })
       .catch((err) => console.warn("Failed to remove CSS:", err));
 
@@ -158,7 +197,7 @@ async function handleCaptureVisible() {
       capturedImage: dataUrl,
       originalCaptures: [{ dataUrl, y: 0 }],
       pageTitle: tab.title || "Screenshot",
-      pageUrl: tab.url || ""
+      pageUrl: tab.url || "",
     });
 
     chrome.tabs.create({ url: "preview.html" });
@@ -171,7 +210,7 @@ async function handleCaptureFullPage() {
   try {
     const [tab] = await chrome.tabs.query({
       active: true,
-      currentWindow: true
+      currentWindow: true,
     });
     if (!tab) return;
     const tabId = tab.id;
@@ -184,9 +223,10 @@ async function handleCaptureFullPage() {
 
     // 3. Get Page Info
     const info = await chrome.tabs.sendMessage(tabId, {
-      type: "GET_PAGE_INFO"
+      type: "GET_PAGE_INFO",
     });
-    let { fullHeight, clientHeight, devicePixelRatio, originalScrollY, width } = info;
+    let { fullHeight, clientHeight, devicePixelRatio, originalScrollY, width } =
+      info;
 
     // Initial Max calculations
     // Limit: 30 screens (increased count due to overlap strategy reducing effectively covered area per shot)
@@ -202,7 +242,7 @@ async function handleCaptureFullPage() {
       // Scroll to Y
       const scrollRes = await chrome.tabs.sendMessage(tabId, {
         type: "SCROLL_TO",
-        y
+        y,
       });
 
       // Update dimensions in case of lazy loading / infinite scroll expanison
@@ -216,7 +256,7 @@ async function handleCaptureFullPage() {
 
       // Capture
       const dataUrl = await chrome.tabs.captureVisibleTab(tab.windowId, {
-        format: "png"
+        format: "png",
       });
       captures.push({ dataUrl, y: realY });
       screenCount++;
@@ -259,7 +299,7 @@ async function handleCaptureFullPage() {
     // 5. Restore
     await chrome.tabs.sendMessage(tabId, {
       type: "FINISH_CAPTURE",
-      originalScrollY
+      originalScrollY,
     });
 
     // 6. Stitch
@@ -276,7 +316,7 @@ async function handleCaptureFullPage() {
       viewportWidth: width,
       viewportHeight: clientHeight,
       totalHeight: finalHeight,
-      devicePixelRatio: devicePixelRatio
+      devicePixelRatio: devicePixelRatio,
     });
 
     if (StitchResponse && StitchResponse.dataUrl) {
@@ -287,7 +327,7 @@ async function handleCaptureFullPage() {
         capturedImage: StitchResponse.dataUrl,
         originalCaptures: captures,
         pageTitle: tab.title || "Screenshot",
-        pageUrl: tab.url || ""
+        pageUrl: tab.url || "",
       });
 
       chrome.tabs.create({ url: "preview.html" });

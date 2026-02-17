@@ -1,12 +1,21 @@
 import React from "react";
+import { authService } from "../services/authService";
 
 const PremiumFeatureModal = ({ onClose }) => {
   const handleUpgrade = async () => {
+    console.log("[PremiumFeatureModal] Upgrade triggered");
     try {
-      await chrome.runtime.sendMessage({ type: "INITIATE_UPGRADE" });
+      await authService.initiateUpgrade();
       if (onClose) onClose();
     } catch (err) {
       console.error("Failed to initiate upgrade:", err);
+      // Fallback to message passing
+      try {
+        await chrome.runtime.sendMessage({ type: "INITIATE_UPGRADE" });
+        if (onClose) onClose();
+      } catch (msgErr) {
+        console.error("Fallback message passing also failed:", msgErr);
+      }
     }
   };
 

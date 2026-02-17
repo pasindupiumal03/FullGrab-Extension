@@ -1,22 +1,25 @@
 import { HUB_URL, STORAGE_KEYS } from "../constants/config";
 
 class AuthService {
+  static STORAGE_KEY = STORAGE_KEYS.AUTH;
+  static STATE_KEY = STORAGE_KEYS.AUTH_STATE;
+
   // Get stored access token
   async getAccessToken() {
-    const result = await chrome.storage.local.get(STORAGE_KEYS.AUTH);
-    return result[STORAGE_KEYS.AUTH]?.accessToken || null;
+    const result = await chrome.storage.local.get(AuthService.STORAGE_KEY);
+    return result[AuthService.STORAGE_KEY]?.accessToken || null;
   }
 
   // Get stored refresh token
   async getRefreshToken() {
-    const result = await chrome.storage.local.get(STORAGE_KEYS.AUTH);
-    return result[STORAGE_KEYS.AUTH]?.refreshToken || null;
+    const result = await chrome.storage.local.get(AuthService.STORAGE_KEY);
+    return result[AuthService.STORAGE_KEY]?.refreshToken || null;
   }
 
   // Get stored user information
   async getUser() {
-    const result = await chrome.storage.local.get(STORAGE_KEYS.AUTH);
-    return result[STORAGE_KEYS.AUTH]?.user || null;
+    const result = await chrome.storage.local.get(AuthService.STORAGE_KEY);
+    return result[AuthService.STORAGE_KEY]?.user || null;
   }
 
   // Check if user is authenticated
@@ -28,16 +31,16 @@ class AuthService {
   // Store authentication data
   async storeAuth(accessToken, refreshToken, user) {
     await chrome.storage.local.set({
-      [STORAGE_KEYS.AUTH]: { accessToken, refreshToken, user },
+      [AuthService.STORAGE_KEY]: { accessToken, refreshToken, user },
     });
   }
 
   // Clear authentication data (logout)
   async logout() {
+    console.log("[AuthService] Logging out...");
     try {
       const refreshToken = await this.getRefreshToken();
       if (refreshToken) {
-        // notify backend to remove refresh token
         await fetch(`${HUB_URL}/api/auth/logout`, {
           method: "POST",
           headers: { "Content-Type": "application/json" },
@@ -47,7 +50,7 @@ class AuthService {
     } catch (e) {
       console.error("Logout API call failed", e);
     } finally {
-      await chrome.storage.local.remove(STORAGE_KEYS.AUTH);
+      await chrome.storage.local.remove(AuthService.STORAGE_KEY);
     }
   }
 
@@ -60,33 +63,27 @@ class AuthService {
   async initiateLogin(returnTo = "/fullgrab") {
     const state = this.generateState();
 
-    // Store state for validation on callback
     await chrome.storage.local.set({
-      [STORAGE_KEYS.AUTH_STATE]: state,
+      [AuthService.STATE_KEY]: state,
     });
 
-    // Get extension ID for callback URL
     const extensionId = chrome.runtime.id;
     const callbackUrl = `chrome-extension://${extensionId}/auth-callback.html`;
 
-    // Build login URL with return parameters
     const loginUrl = new URL(`${HUB_URL}/auth/extension`);
     loginUrl.searchParams.set("returnUrl", callbackUrl);
     loginUrl.searchParams.set("state", state);
-    if (returnTo) {
-      // We can pass this through if we want deep linking support later
-    }
 
-    // Open Hub login in new tab
+    console.log("AuthService: Initiating login", loginUrl.toString());
     await chrome.tabs.create({ url: loginUrl.toString() });
   }
 
-  // Initiate signup flow - redirects to Hub
+  // Initiate signup flow
   async initiateSignup(returnTo = "/fullgrab") {
     const state = this.generateState();
 
     await chrome.storage.local.set({
-      [STORAGE_KEYS.AUTH_STATE]: state,
+      [AuthService.STATE_KEY]: state,
     });
 
     const extensionId = chrome.runtime.id;
@@ -105,17 +102,14 @@ class AuthService {
     const state = this.generateState();
 
     await chrome.storage.local.set({
-      [STORAGE_KEYS.AUTH_STATE]: state,
+      [AuthService.STATE_KEY]: state,
     });
 
     const extensionId = chrome.runtime.id;
-    // Embed state in the callback URL so it survives the payment flow
     const callbackUrl = `chrome-extension://${extensionId}/auth-callback.html?state=${state}`;
 
     const upgradeUrl = new URL(`${HUB_URL}/plans`);
     upgradeUrl.searchParams.set("returnUrl", callbackUrl);
-
-    // Pass app ID to pre-select the correct plan/app context
     upgradeUrl.searchParams.set("appId", "fullgrab");
 
     await chrome.tabs.create({ url: upgradeUrl.toString() });
@@ -135,9 +129,9 @@ class AuthService {
         return { success: false, error: "Missing tokens or state" };
       }
 
-      // Verify state matches (CSRF protection)
-      const result = await chrome.storage.local.get(STORAGE_KEYS.AUTH_STATE);
-      const storedState = result[STORAGE_KEYS.AUTH_STATE];
+      // Verify state matches
+      const result = await chrome.storage.local.get(AuthService.STATE_KEY);
+      const storedState = result[AuthService.STATE_KEY];
 
       if (state !== storedState) {
         return {
@@ -163,7 +157,7 @@ class AuthService {
       await this.storeAuth(accessToken, refreshToken, user);
 
       // Clean up state
-      await chrome.storage.local.remove(STORAGE_KEYS.AUTH_STATE);
+      await chrome.storage.local.remove(AuthService.STATE_KEY);
 
       return { success: true, returnTo };
     } catch (error) {
@@ -203,7 +197,7 @@ class AuthService {
       }
       return false;
     } catch (error) {
-      console.error("Refresh session failed", error);
+      console.error("Refresh session error:", error);
       return false;
     }
   }
@@ -220,7 +214,6 @@ class AuthService {
     const response = await fetch(url, { ...options, headers });
 
     if (response.status === 401) {
-      // Try refresh
       const refreshed = await this.refreshSession();
       if (refreshed) {
         const newAccessToken = await this.getAccessToken();
