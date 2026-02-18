@@ -343,7 +343,15 @@ const UserInfoWidget = () => {
   const displayName = user?.name || user?.email?.split("@")[0] || "Account";
 
   return (
-    <div style={{ display: "flex", alignItems: "center", gap: "10px" }}>
+    <div
+      style={{
+        display: "flex",
+        alignItems: "center",
+        gap: "10px",
+        padding: "20px",
+        margin: "-20px"
+      }}
+    >
       <style>{`
         @keyframes fgUserMenuIn {
           from { opacity: 0; transform: translateY(-6px) scale(0.97); }

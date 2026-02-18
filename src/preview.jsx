@@ -557,6 +557,8 @@ const Preview = () => {
           .header-tooltip-wrapper {
             position: relative;
             display: inline-flex;
+            padding: 20px;
+            margin: -20px;
           }
           
           .header-tooltip {
@@ -1106,7 +1108,15 @@ const Preview = () => {
           </div>
 
           {/* Right Actions (Download Buttons + User Info) */}
-          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
+          <div
+            style={{
+              display: "flex",
+              alignItems: "center",
+              gap: "12px",
+              padding: "20px",
+              margin: "-20px"
+            }}
+          >
             {/* PDF Button */}
             <div className="header-tooltip-wrapper">
               <button className="download-btn-pdf" onClick={handleDownloadPDF}>

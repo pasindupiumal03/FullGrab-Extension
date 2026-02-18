@@ -34,7 +34,7 @@ const PremiumFeatureModal = ({ onClose }) => {
         alignItems: "center",
         justifyContent: "center",
         fontFamily: "'Inter', sans-serif",
-        animation: "fadeIn 0.2s ease-out",
+        animation: "fadeIn 0.2s ease-out"
       }}
     >
       <style>{`
@@ -53,7 +53,7 @@ const PremiumFeatureModal = ({ onClose }) => {
           boxShadow: "0 20px 60px rgba(0, 0, 0, 0.3)",
           border: "1px solid rgba(255, 255, 255, 0.1)",
           position: "relative",
-          animation: "scaleIn 0.3s ease-out",
+          animation: "scaleIn 0.3s ease-out"
         }}
       >
         {/* Close Button */}
@@ -72,7 +72,7 @@ const PremiumFeatureModal = ({ onClose }) => {
             transition: "all 0.2s ease",
             display: "flex",
             alignItems: "center",
-            justifyContent: "center",
+            justifyContent: "center"
           }}
           onMouseOver={(e) => {
             e.currentTarget.style.backgroundColor = "#f3f4f6";
@@ -109,7 +109,7 @@ const PremiumFeatureModal = ({ onClose }) => {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            boxShadow: "0 10px 20px rgba(99, 102, 241, 0.3)",
+            boxShadow: "0 10px 20px rgba(99, 102, 241, 0.3)"
           }}
         >
           <svg
@@ -132,7 +132,7 @@ const PremiumFeatureModal = ({ onClose }) => {
             fontWeight: "800",
             color: "#111827",
             marginBottom: "12px",
-            letterSpacing: "-0.5px",
+            letterSpacing: "-0.5px"
           }}
         >
           Unlock Premium
@@ -143,14 +143,22 @@ const PremiumFeatureModal = ({ onClose }) => {
             fontSize: "15px",
             color: "#6b7280",
             marginBottom: "32px",
-            lineHeight: "1.6",
+            lineHeight: "1.6"
           }}
         >
-          This feature is available exclusively for Premium users. Upgrade now
-          to remove limits and unlock all tools.
+          This feature is available exclusively for Premium users. Upgrade now to remove limits and
+          unlock all tools.
         </p>
 
-        <div style={{ display: "flex", flexDirection: "column", gap: "12px" }}>
+        <div
+          style={{
+            display: "flex",
+            flexDirection: "column",
+            gap: "12px",
+            padding: "20px",
+            margin: "-20px"
+          }}
+        >
           <button
             onClick={handleUpgrade}
             style={{
@@ -164,7 +172,7 @@ const PremiumFeatureModal = ({ onClose }) => {
               fontSize: "16px",
               cursor: "pointer",
               boxShadow: "0 4px 12px rgba(79, 70, 229, 0.3)",
-              transition: "transform 0.2s ease, box-shadow 0.2s ease",
+              transition: "transform 0.2s ease, box-shadow 0.2s ease"
             }}
             onMouseOver={(e) => {
               e.target.style.transform = "translateY(-2px)";
@@ -190,7 +198,7 @@ const PremiumFeatureModal = ({ onClose }) => {
               fontWeight: "600",
               fontSize: "14px",
               cursor: "pointer",
-              transition: "color 0.2s ease",
+              transition: "color 0.2s ease"
             }}
             onMouseOver={(e) => (e.target.style.color = "#111827")}
             onMouseOut={(e) => (e.target.style.color = "#6b7280")}
