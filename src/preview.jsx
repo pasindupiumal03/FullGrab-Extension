@@ -5,6 +5,7 @@ import { jsPDF } from "jspdf";
 import PremiumFeatureModal from "./components/PremiumFeatureModal";
 import TrialExpiredScreen from "./components/TrialExpiredScreen";
 import { isPremiumUser, hasAccess } from "./controllers/subscriptionController";
+import UserInfoWidget from "./components/UserInfoWidget";
 
 const Preview = () => {
   const [image, setImage] = useState(null);
@@ -1104,8 +1105,8 @@ const Preview = () => {
             </div>
           </div>
 
-          {/* Right Actions (Download Buttons) */}
-          <div style={{ display: "flex", gap: "12px" }}>
+          {/* Right Actions (Download Buttons + User Info) */}
+          <div style={{ display: "flex", alignItems: "center", gap: "12px" }}>
             {/* PDF Button */}
             <div className="header-tooltip-wrapper">
               <button className="download-btn-pdf" onClick={handleDownloadPDF}>
@@ -1151,6 +1152,18 @@ const Preview = () => {
               </button>
               <span className="header-tooltip">Download as PNG</span>
             </div>
+
+            {/* Divider */}
+            <div
+              style={{
+                width: "1px",
+                height: "20px",
+                background: "rgba(255,255,255,0.3)"
+              }}
+            />
+
+            {/* User Info Widget */}
+            <UserInfoWidget />
           </div>
         </div>
 
