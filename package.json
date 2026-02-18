@@ -1,5 +1,5 @@
 {
-  "name": "ReactJs-Chrome-Extension-boilerplate",
+  "name": "fullgrab-extension",
   "version": "1.0.0",
   "description": "A modern ReactJS Chrome Extension template with TailwindCSS and Webpack",
   "main": "index.js",
