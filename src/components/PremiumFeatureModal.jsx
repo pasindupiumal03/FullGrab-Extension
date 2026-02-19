@@ -12,7 +12,10 @@ const PremiumFeatureModal = ({ onClose, isAuthenticated = true }) => {
       }
       if (onClose) onClose();
     } catch (err) {
-      console.error("Failed to initiate upgrade/login:", err);
+      console.error(
+        isAuthenticated ? "Failed to initiate upgrade:" : "Failed to initiate login:",
+        err
+      );
       // Fallback to message passing
       try {
         await chrome.runtime.sendMessage({
