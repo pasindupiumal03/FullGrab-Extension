@@ -7,6 +7,7 @@ import TrialExpiredScreen from "./components/TrialExpiredScreen";
 import { isPremiumUser, hasAccess } from "./controllers/subscriptionController";
 import UserInfoWidget from "./components/UserInfoWidget";
 import { authService } from "./services/authService";
+import { STORAGE_KEYS } from "./constants/config";
 
 const Preview = () => {
   const [image, setImage] = useState(null);
@@ -27,7 +28,25 @@ const Preview = () => {
 
   useEffect(() => {
     checkAccess();
+
+    // Listen for auth changes (e.g. login/logout in other tabs)
+    const handleStorageChange = (changes, area) => {
+      if (area === "local" && changes[STORAGE_KEYS.AUTH]) {
+        console.log("Auth state changed in storage, refreshing access...");
+        checkAccess();
+      }
+    };
+
+    chrome.storage.onChanged.addListener(handleStorageChange);
+    return () => chrome.storage.onChanged.removeListener(handleStorageChange);
   }, []);
+
+  // Re-check access when modal opens to ensure we show correct state
+  useEffect(() => {
+    if (showPremiumModal) {
+      checkAccess();
+    }
+  }, [showPremiumModal]);
 
   const checkAccess = async () => {
     const [access, authed] = await Promise.all([hasAccess(), authService.isAuthenticated()]);
@@ -708,7 +727,9 @@ const Preview = () => {
         `}
       </style>
 
-      {hasAppAccess === false && <TrialExpiredScreen isPopup={false} />}
+      {hasAppAccess === false && (
+        <TrialExpiredScreen isPopup={false} isAuthenticated={isAuthenticated} />
+      )}
 
       {showPremiumModal && (
         <PremiumFeatureModal

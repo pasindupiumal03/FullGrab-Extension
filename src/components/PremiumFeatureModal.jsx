@@ -1,7 +1,7 @@
 import React from "react";
 import { authService } from "../services/authService";
 
-const PremiumFeatureModal = ({ onClose, isAuthenticated = true }) => {
+const PremiumFeatureModal = ({ onClose, isAuthenticated }) => {
   const handleUpgrade = async () => {
     console.log("[PremiumFeatureModal] Action triggered, isAuthenticated:", isAuthenticated);
     try {
