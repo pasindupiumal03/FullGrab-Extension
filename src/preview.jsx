@@ -6,6 +6,7 @@ import PremiumFeatureModal from "./components/PremiumFeatureModal";
 import TrialExpiredScreen from "./components/TrialExpiredScreen";
 import { isPremiumUser, hasAccess } from "./controllers/subscriptionController";
 import UserInfoWidget from "./components/UserInfoWidget";
+import { authService } from "./services/authService";
 
 const Preview = () => {
   const [image, setImage] = useState(null);
@@ -22,14 +23,16 @@ const Preview = () => {
   const [pageInfo, setPageInfo] = useState({ title: "Screenshot", url: "" });
   const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [hasAppAccess, setHasAppAccess] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     checkAccess();
   }, []);
 
   const checkAccess = async () => {
-    const access = await hasAccess();
+    const [access, authed] = await Promise.all([hasAccess(), authService.isAuthenticated()]);
     setHasAppAccess(access);
+    setIsAuthenticated(authed);
   };
 
   const handleShare = async () => {
@@ -707,7 +710,12 @@ const Preview = () => {
 
       {hasAppAccess === false && <TrialExpiredScreen isPopup={false} />}
 
-      {showPremiumModal && <PremiumFeatureModal onClose={() => setShowPremiumModal(false)} />}
+      {showPremiumModal && (
+        <PremiumFeatureModal
+          onClose={() => setShowPremiumModal(false)}
+          isAuthenticated={isAuthenticated}
+        />
+      )}
 
       {showDeleteConfirm && (
         <div className="modal-overlay">

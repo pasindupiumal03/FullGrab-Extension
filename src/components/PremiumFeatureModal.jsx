@@ -1,17 +1,23 @@
 import React from "react";
 import { authService } from "../services/authService";
 
-const PremiumFeatureModal = ({ onClose }) => {
+const PremiumFeatureModal = ({ onClose, isAuthenticated = true }) => {
   const handleUpgrade = async () => {
-    console.log("[PremiumFeatureModal] Upgrade triggered");
+    console.log("[PremiumFeatureModal] Action triggered, isAuthenticated:", isAuthenticated);
     try {
-      await authService.initiateUpgrade();
+      if (isAuthenticated) {
+        await authService.initiateUpgrade();
+      } else {
+        await authService.initiateLogin();
+      }
       if (onClose) onClose();
     } catch (err) {
-      console.error("Failed to initiate upgrade:", err);
+      console.error("Failed to initiate upgrade/login:", err);
       // Fallback to message passing
       try {
-        await chrome.runtime.sendMessage({ type: "INITIATE_UPGRADE" });
+        await chrome.runtime.sendMessage({
+          type: isAuthenticated ? "INITIATE_UPGRADE" : "INITIATE_LOGIN"
+        });
         if (onClose) onClose();
       } catch (msgErr) {
         console.error("Fallback message passing also failed:", msgErr);
@@ -135,7 +141,7 @@ const PremiumFeatureModal = ({ onClose }) => {
             letterSpacing: "-0.5px"
           }}
         >
-          Unlock Premium
+          {isAuthenticated ? "Unlock Premium" : "Sign In"}
         </h3>
 
         <p
@@ -146,8 +152,9 @@ const PremiumFeatureModal = ({ onClose }) => {
             lineHeight: "1.6"
           }}
         >
-          This feature is available exclusively for Premium users. Upgrade now to remove limits and
-          unlock all tools.
+          {isAuthenticated
+            ? "This feature is available exclusively for Premium users. Upgrade now to remove limits and unlock all tools."
+            : "Please sign in to your account to verify your subscription status and unlock all premium features."}
         </p>
 
         <div
@@ -183,7 +190,7 @@ const PremiumFeatureModal = ({ onClose }) => {
               e.target.style.boxShadow = "0 4px 12px rgba(79, 70, 229, 0.3)";
             }}
           >
-            Get Premium Access
+            {isAuthenticated ? "Get Premium Access" : "Sign In"}
           </button>
 
           <button
