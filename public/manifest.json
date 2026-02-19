@@ -1,6 +1,6 @@
 {
   "name": "FullGrab - Screenshot & Full Page Capture",
-  "version": "1.0.1",
+  "version": "1.1.0",
   "description": "Capture visible area and full-page screenshots. Download as PNG or PDF. Share instantly with generated links.",
   "manifest_version": 3,
   "action": {

@@ -4,6 +4,11 @@ class AuthService {
   static STORAGE_KEY = STORAGE_KEYS.AUTH;
   static STATE_KEY = STORAGE_KEYS.AUTH_STATE;
 
+  constructor() {
+    // Shared promise for concurrent refresh handling
+    this.refreshPromise = null;
+  }
+
   // Get stored access token
   async getAccessToken() {
     const result = await chrome.storage.local.get(AuthService.STORAGE_KEY);
@@ -185,34 +190,60 @@ class AuthService {
   }
 
   // Refresh session using refresh token
+  // Returns success boolean
+  // Refresh session using refresh token
+  // Returns success boolean
   async refreshSession() {
-    try {
-      const refreshToken = await this.getRefreshToken();
-      if (!refreshToken) return false;
+    // If a refresh is already in progress, return the existing promise
+    if (this.refreshPromise) {
+      return this.refreshPromise;
+    }
 
-      const response = await fetch(`${HUB_URL}/api/auth/refresh`, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ refreshToken }),
-      });
+    this.refreshPromise = (async () => {
+      try {
+        const refreshToken = await this.getRefreshToken();
+        if (!refreshToken) return false;
 
-      if (response.ok) {
+        const response = await fetch(`${HUB_URL}/api/auth/refresh`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ refreshToken }),
+        });
+
+        if (!response.ok) {
+          throw new Error(
+            `Token refresh request failed with status ${response.status}`
+          );
+        }
+
         const data = await response.json();
         const user = await this.getUser();
-        if (user) {
-          await this.storeAuth(data.accessToken, data.refreshToken, user);
-          return true;
+
+        if (!user) {
+          throw new Error("User data not found after refresh");
         }
+
+        await this.storeAuth(data.accessToken, data.refreshToken, user);
+        return true;
+      } catch (error) {
+        console.error("Refresh session error:", error);
+        return false;
+      } finally {
+        this.refreshPromise = null;
       }
-      return false;
-    } catch (error) {
-      console.error("Refresh session error:", error);
-      return false;
-    }
+    })();
+
+    return this.refreshPromise;
   }
 
   // Fetch with automatic token handling and refresh
   async fetchWithAuth(url, options = {}) {
+    // Check if we are currently refreshing
+    // Check if we are currently refreshing
+    if (this.refreshPromise) {
+      await this.refreshPromise;
+    }
+
     const accessToken = await this.getAccessToken();
     const headers = new Headers(options.headers);
 

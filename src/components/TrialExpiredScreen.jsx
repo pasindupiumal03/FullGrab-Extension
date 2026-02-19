@@ -1,23 +1,9 @@
 import React, { useEffect, useState } from "react";
 import { authService } from "../services/authService";
 
-const TrialExpiredScreen = ({ isPopup = false }) => {
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
-
-  useEffect(() => {
-    checkAuth();
-  }, []);
-
-  const checkAuth = async () => {
-    const isAuth = await authService.isAuthenticated();
-    setIsAuthenticated(isAuth);
-  };
-
+const TrialExpiredScreen = ({ isPopup = false, isAuthenticated }) => {
   const handleAction = async () => {
-    console.log(
-      "[TrialExpiredScreen] Action triggered, isAuthenticated:",
-      isAuthenticated
-    );
+    console.log("[TrialExpiredScreen] Action triggered, isAuthenticated:", isAuthenticated);
     try {
       if (isAuthenticated) {
         // User is signed in but no premium access -> Go to plans
@@ -31,7 +17,7 @@ const TrialExpiredScreen = ({ isPopup = false }) => {
       // Fallback to message passing if direct call fails
       try {
         await chrome.runtime.sendMessage({
-          type: isAuthenticated ? "INITIATE_UPGRADE" : "INITIATE_LOGIN",
+          type: isAuthenticated ? "INITIATE_UPGRADE" : "INITIATE_LOGIN"
         });
       } catch (msgErr) {
         console.error("Fallback message passing also failed:", msgErr);
@@ -60,7 +46,7 @@ const TrialExpiredScreen = ({ isPopup = false }) => {
           textAlign: "center",
           fontFamily: "'Inter', sans-serif",
           boxSizing: "border-box",
-          animation: "fadeIn 0.3s ease-out",
+          animation: "fadeIn 0.3s ease-out"
         }}
       >
         <style>{`
@@ -76,7 +62,7 @@ const TrialExpiredScreen = ({ isPopup = false }) => {
             width: "100%",
             boxShadow: "0 10px 25px rgba(0,0,0,0.1)",
             border: "1px solid rgba(0,0,0,0.05)",
-            animation: "slideUp 0.4s ease-out",
+            animation: "slideUp 0.4s ease-out"
           }}
         >
           <div
@@ -89,7 +75,7 @@ const TrialExpiredScreen = ({ isPopup = false }) => {
               alignItems: "center",
               justifyContent: "center",
               margin: "0 auto 20px auto",
-              boxShadow: "0 4px 15px rgba(245, 158, 11, 0.3)",
+              boxShadow: "0 4px 15px rgba(245, 158, 11, 0.3)"
             }}
           >
             <svg
@@ -114,7 +100,7 @@ const TrialExpiredScreen = ({ isPopup = false }) => {
               fontWeight: "800",
               color: "#111827",
               marginBottom: "10px",
-              letterSpacing: "-0.5px",
+              letterSpacing: "-0.5px"
             }}
           >
             Trial Expired
@@ -126,7 +112,7 @@ const TrialExpiredScreen = ({ isPopup = false }) => {
               color: "#6b7280",
               marginBottom: "24px",
               lineHeight: "1.5",
-              padding: "0 10px",
+              padding: "0 10px"
             }}
           >
             {isAuthenticated
@@ -147,7 +133,7 @@ const TrialExpiredScreen = ({ isPopup = false }) => {
               fontSize: "15px",
               cursor: "pointer",
               boxShadow: "0 4px 12px rgba(234, 88, 12, 0.25)",
-              transition: "all 0.2s ease",
+              transition: "all 0.2s ease"
             }}
             onMouseOver={(e) => {
               e.target.style.transform = "translateY(-1px)";
@@ -180,7 +166,7 @@ const TrialExpiredScreen = ({ isPopup = false }) => {
         display: "flex",
         alignItems: "center",
         justifyContent: "center",
-        fontFamily: "'Inter', sans-serif",
+        fontFamily: "'Inter', sans-serif"
       }}
     >
       <div
@@ -192,7 +178,7 @@ const TrialExpiredScreen = ({ isPopup = false }) => {
           maxWidth: "480px",
           textAlign: "center",
           boxShadow: "0 25px 50px -12px rgba(0, 0, 0, 0.25)",
-          animation: "scaleIn 0.3s ease-out",
+          animation: "scaleIn 0.3s ease-out"
         }}
       >
         <style>{`
@@ -212,7 +198,7 @@ const TrialExpiredScreen = ({ isPopup = false }) => {
             alignItems: "center",
             justifyContent: "center",
             margin: "0 auto 30px auto",
-            boxShadow: "0 10px 30px rgba(245, 158, 11, 0.3)",
+            boxShadow: "0 10px 30px rgba(245, 158, 11, 0.3)"
           }}
         >
           <svg
@@ -237,7 +223,7 @@ const TrialExpiredScreen = ({ isPopup = false }) => {
             fontWeight: "800",
             color: "#111827",
             marginBottom: "12px",
-            letterSpacing: "-0.5px",
+            letterSpacing: "-0.5px"
           }}
         >
           Free Trial Expired
@@ -248,7 +234,7 @@ const TrialExpiredScreen = ({ isPopup = false }) => {
             fontSize: "16px",
             color: "#6b7280",
             marginBottom: "40px",
-            lineHeight: "1.6",
+            lineHeight: "1.6"
           }}
         >
           {isAuthenticated
@@ -270,7 +256,7 @@ const TrialExpiredScreen = ({ isPopup = false }) => {
             cursor: "pointer",
             boxShadow: "0 4px 12px rgba(234, 88, 12, 0.25)",
             transition: "all 0.2s ease",
-            marginBottom: "16px",
+            marginBottom: "16px"
           }}
           onMouseOver={(e) => {
             e.target.style.transform = "translateY(-2px)";
@@ -284,9 +270,7 @@ const TrialExpiredScreen = ({ isPopup = false }) => {
           {isAuthenticated ? "Upgrade to Premium" : "Sign In to Continue"}
         </button>
 
-        <p style={{ fontSize: "12px", color: "#9ca3af" }}>
-          Secure payment processing via Stripe
-        </p>
+        <p style={{ fontSize: "12px", color: "#9ca3af" }}>Secure payment processing via Stripe</p>
       </div>
     </div>
   );

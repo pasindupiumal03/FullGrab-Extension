@@ -6,6 +6,8 @@ import PremiumFeatureModal from "./components/PremiumFeatureModal";
 import TrialExpiredScreen from "./components/TrialExpiredScreen";
 import { isPremiumUser, hasAccess } from "./controllers/subscriptionController";
 import UserInfoWidget from "./components/UserInfoWidget";
+import { authService } from "./services/authService";
+import { STORAGE_KEYS } from "./constants/config";
 
 const Preview = () => {
   const [image, setImage] = useState(null);
@@ -22,14 +24,34 @@ const Preview = () => {
   const [pageInfo, setPageInfo] = useState({ title: "Screenshot", url: "" });
   const [showPremiumModal, setShowPremiumModal] = useState(false);
   const [hasAppAccess, setHasAppAccess] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     checkAccess();
+
+    // Listen for auth changes (e.g. login/logout in other tabs)
+    const handleStorageChange = (changes, area) => {
+      if (area === "local" && changes[STORAGE_KEYS.AUTH]) {
+        console.log("Auth state changed in storage, refreshing access...");
+        checkAccess();
+      }
+    };
+
+    chrome.storage.onChanged.addListener(handleStorageChange);
+    return () => chrome.storage.onChanged.removeListener(handleStorageChange);
   }, []);
 
+  // Re-check access when modal opens to ensure we show correct state
+  useEffect(() => {
+    if (showPremiumModal) {
+      checkAccess();
+    }
+  }, [showPremiumModal]);
+
   const checkAccess = async () => {
-    const access = await hasAccess();
+    const [access, authed] = await Promise.all([hasAccess(), authService.isAuthenticated()]);
     setHasAppAccess(access);
+    setIsAuthenticated(authed);
   };
 
   const handleShare = async () => {
@@ -705,9 +727,16 @@ const Preview = () => {
         `}
       </style>
 
-      {hasAppAccess === false && <TrialExpiredScreen isPopup={false} />}
+      {hasAppAccess === false && (
+        <TrialExpiredScreen isPopup={false} isAuthenticated={isAuthenticated} />
+      )}
 
-      {showPremiumModal && <PremiumFeatureModal onClose={() => setShowPremiumModal(false)} />}
+      {showPremiumModal && (
+        <PremiumFeatureModal
+          onClose={() => setShowPremiumModal(false)}
+          isAuthenticated={isAuthenticated}
+        />
+      )}
 
       {showDeleteConfirm && (
         <div className="modal-overlay">
