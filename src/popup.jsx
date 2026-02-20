@@ -3,17 +3,24 @@ import { createRoot } from "react-dom/client";
 import "./index.css";
 import TrialExpiredScreen from "./components/TrialExpiredScreen";
 import { hasAccess } from "./controllers/subscriptionController";
+import { authService } from "./services/authService";
 
 const Popup = () => {
   const [hasAppAccess, setHasAppAccess] = useState(null);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     checkAccess();
   }, []);
 
   const checkAccess = async () => {
+    // Serialize checks to avoid race conditions.
+    // hasAccess may trigger a token refresh or logout.
     const access = await hasAccess();
+    const authed = await authService.isAuthenticated();
+
     setHasAppAccess(access);
+    setIsAuthenticated(authed);
   };
 
   const handleVisibleClick = () => {
@@ -44,7 +51,9 @@ const Popup = () => {
       }}
     >
       {/* Overlay: Trial Expired */}
-      {hasAppAccess === false && <TrialExpiredScreen isPopup={true} />}
+      {hasAppAccess === false && (
+        <TrialExpiredScreen isPopup={true} isAuthenticated={isAuthenticated} />
+      )}
 
       <style>{`
         ::-webkit-scrollbar { display: none; }

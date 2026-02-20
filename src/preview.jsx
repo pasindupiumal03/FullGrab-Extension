@@ -49,7 +49,11 @@ const Preview = () => {
   }, [showPremiumModal]);
 
   const checkAccess = async () => {
-    const [access, authed] = await Promise.all([hasAccess(), authService.isAuthenticated()]);
+    // Serialize checks to avoid race conditions.
+    // hasAccess may trigger a token refresh or logout.
+    const access = await hasAccess();
+    const authed = await authService.isAuthenticated();
+
     setHasAppAccess(access);
     setIsAuthenticated(authed);
   };
