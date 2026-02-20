@@ -6,11 +6,33 @@ import { hasAccess } from "./controllers/subscriptionController";
 import { authService } from "./services/authService";
 
 const Popup = () => {
-  const [hasAppAccess, setHasAppAccess] = useState(null);
+  const [hasAppAccess, setHasAppAccess] = useState(true);
   const [isAuthenticated, setIsAuthenticated] = useState(false);
 
   useEffect(() => {
     checkAccess();
+
+    // Listen for auth changes (e.g. login/logout in other tabs)
+    const handleStorageChange = (changes, area) => {
+      if (area === "local" && changes[STORAGE_KEYS.AUTH]) {
+        console.log("Auth state changed in storage, refreshing access...");
+        checkAccess();
+      }
+    };
+
+    // Listen for window focus to refresh access (e.g. after upgrade flow)
+    const handleFocus = () => {
+      console.log("Popup focused, refreshing access...");
+      checkAccess();
+    };
+
+    chrome.storage.onChanged.addListener(handleStorageChange);
+    window.addEventListener("focus", handleFocus);
+
+    return () => {
+      chrome.storage.onChanged.removeListener(handleStorageChange);
+      window.removeEventListener("focus", handleFocus);
+    };
   }, []);
 
   const checkAccess = async () => {

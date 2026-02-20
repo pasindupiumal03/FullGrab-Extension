@@ -37,8 +37,19 @@ const Preview = () => {
       }
     };
 
+    // Listen for window focus to refresh access (e.g. after upgrade flow)
+    const handleFocus = () => {
+      console.log("Preview focused, refreshing access...");
+      checkAccess();
+    };
+
     chrome.storage.onChanged.addListener(handleStorageChange);
-    return () => chrome.storage.onChanged.removeListener(handleStorageChange);
+    window.addEventListener("focus", handleFocus);
+
+    return () => {
+      chrome.storage.onChanged.removeListener(handleStorageChange);
+      window.removeEventListener("focus", handleFocus);
+    };
   }, []);
 
   // Re-check access when modal opens to ensure we show correct state

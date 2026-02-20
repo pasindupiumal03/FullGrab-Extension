@@ -117,6 +117,7 @@ class AuthService {
 
     await chrome.storage.local.set({
       [AuthService.STATE_KEY]: state,
+      [STORAGE_KEYS.UPGRADE_INTENT]: true,
     });
 
     const extensionId = chrome.runtime.id;
@@ -193,6 +194,28 @@ class AuthService {
   // Returns success boolean - true if refreshed, false if refresh token is invalid
   // Throws error if network/server issue
   async refreshSession() {
+    // If called from UI context, delegate to background script
+    if (typeof window !== "undefined") {
+      return new Promise((resolve) => {
+        chrome.runtime.sendMessage({ type: "REFRESH_TOKEN" }, (response) => {
+          if (chrome.runtime.lastError) {
+            console.error(
+              "Refresh message failed:",
+              chrome.runtime.lastError.message
+            );
+            resolve(false);
+            return;
+          }
+          resolve(response?.success || false);
+        });
+      });
+    }
+
+    return this.performRefresh();
+  }
+
+  // Internal fetch logic for background script
+  async performRefresh() {
     // If a refresh is already in progress, return the existing promise
     if (this.refreshPromise) {
       return this.refreshPromise;

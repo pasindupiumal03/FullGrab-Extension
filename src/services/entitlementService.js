@@ -95,6 +95,16 @@ class EntitlementService {
           return false;
         }
 
+        // Check for upgrade intent (force refresh if user just came from upgrade flow)
+        const intent = await chrome.storage.local.get(
+          STORAGE_KEYS.UPGRADE_INTENT
+        );
+        if (intent[STORAGE_KEYS.UPGRADE_INTENT]) {
+          console.log("[Entitlement] Upgrade intent found, bypassing cache");
+          await this.clearCache();
+          await chrome.storage.local.remove(STORAGE_KEYS.UPGRADE_INTENT);
+        }
+
         // Check cache first
         const cached = await this.getCache();
         if (cached && this.isCacheValid(cached)) {
@@ -104,13 +114,26 @@ class EntitlementService {
         console.log(
           "[Entitlement] Cache expired or missing, fetching from API..."
         );
-        // Fetch from API
-        const isPremium = await this.fetchPremiumStatus();
+        // Fetch from API with retry
+        try {
+          const isPremium = await this.fetchPremiumStatus();
 
-        // Update cache
-        await this.setCache(isPremium);
+          // Update cache
+          await this.setCache(isPremium);
 
-        return isPremium;
+          return isPremium;
+        } catch (fetchError) {
+          console.log(
+            "First premium check failed, retrying once in 1s...",
+            fetchError
+          );
+          // Wait 1 second before retrying to allow Vercel cold starts to resolve
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+          // Retry once to handle transient refresh race conditions or cold starts
+          const isPremiumRetry = await this.fetchPremiumStatus();
+          await this.setCache(isPremiumRetry);
+          return isPremiumRetry;
+        }
       } catch (error) {
         console.error("[Entitlement] Premium check failed:", error);
         return false;

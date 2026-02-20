@@ -3,6 +3,11 @@ import { createRoot } from "react-dom/client";
 import { jsPDF } from "jspdf";
 import "./index.css";
 import UserInfoWidget from "./components/UserInfoWidget";
+import PremiumFeatureModal from "./components/PremiumFeatureModal";
+import TrialExpiredScreen from "./components/TrialExpiredScreen";
+import { isPremiumUser, hasAccess } from "./controllers/subscriptionController";
+import { authService } from "./services/authService";
+import { STORAGE_KEYS } from "./constants/config";
 
 const EditPage = () => {
   const [image, setImage] = useState(null);
@@ -18,6 +23,48 @@ const EditPage = () => {
   const [textOverlays, setTextOverlays] = useState([]);
   const [textInput, setTextInput] = useState("");
   const [shapes, setShapes] = useState([]);
+  const [hasAppAccess, setHasAppAccess] = useState(true);
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [showPremiumModal, setShowPremiumModal] = useState(false);
+
+  const checkAccess = async () => {
+    const access = await hasAccess();
+    const authed = await authService.isAuthenticated();
+    setHasAppAccess(access);
+    setIsAuthenticated(authed);
+
+    // Edit page is a strict premium feature
+    const premium = await isPremiumUser();
+    if (!premium) {
+      setShowPremiumModal(true);
+    } else {
+      setShowPremiumModal(false);
+    }
+  };
+
+  useEffect(() => {
+    checkAccess();
+
+    const handleStorageChange = (changes, area) => {
+      if (area === "local" && changes[STORAGE_KEYS.AUTH]) {
+        console.log("Auth state changed in storage, refreshing access...");
+        checkAccess();
+      }
+    };
+
+    const handleFocus = () => {
+      console.log("Edit focused, refreshing access...");
+      checkAccess();
+    };
+
+    chrome.storage.onChanged.addListener(handleStorageChange);
+    window.addEventListener("focus", handleFocus);
+
+    return () => {
+      chrome.storage.onChanged.removeListener(handleStorageChange);
+      window.removeEventListener("focus", handleFocus);
+    };
+  }, []);
   const [brushSize, setBrushSize] = useState(5);
   const [brushOpacity, setBrushOpacity] = useState(100);
   const [brushColor, setBrushColor] = useState("#a855f7");
@@ -1100,8 +1147,16 @@ const EditPage = () => {
     { id: "postout", label: "Postout" }
   ];
 
+  if (!hasAppAccess) {
+    return <TrialExpiredScreen isAuthenticated={isAuthenticated} />;
+  }
+
   return (
     <>
+      <PremiumFeatureModal
+        isOpen={showPremiumModal}
+        onClose={() => (window.location.href = "preview.html")}
+      />
       <style>{`
                 /* Hide scrollbar for sidebar */
                 .edit-sidebar::-webkit-scrollbar {
