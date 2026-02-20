@@ -104,8 +104,8 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           break;
 
         case "REFRESH_TOKEN":
-          const refreshSuccess = await authService.performRefresh();
-          sendResponse({ ok: true, success: refreshSuccess });
+          const refreshed = await authService.refreshSession();
+          sendResponse({ ok: refreshed });
           break;
 
         case "PING":

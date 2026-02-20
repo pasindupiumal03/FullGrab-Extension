@@ -200,13 +200,16 @@ class AuthService {
         chrome.runtime.sendMessage({ type: "REFRESH_TOKEN" }, (response) => {
           if (chrome.runtime.lastError) {
             console.error(
-              "Refresh message failed:",
-              chrome.runtime.lastError.message
+              "Failed to communicate with background script for refresh:",
+              chrome.runtime.lastError.message || chrome.runtime.lastError
             );
-            resolve(false);
-            return;
+            // Fallback: do it locally if background is dead
+            this.performRefresh()
+              .then(resolve)
+              .catch(() => resolve(false));
+          } else {
+            resolve(response?.ok || false);
           }
-          resolve(response?.success || false);
         });
       });
     }
@@ -247,9 +250,7 @@ class AuthService {
           // another context (tab/background) likely refreshed it successfully.
           const currentRefreshToken = await this.getRefreshToken();
           if (currentRefreshToken && currentRefreshToken !== refreshToken) {
-            console.log(
-              "Token was refreshed by another context. Considering success."
-            );
+            console.log("Token was refreshed by another context. Considering success.");
             return true;
           }
 
@@ -258,9 +259,7 @@ class AuthService {
         }
 
         // Server Error / Rate Limit -> Throw (Don't Logout)
-        throw new Error(
-          `Token refresh request failed with status ${response.status}`
-        );
+        throw new Error(`Token refresh request failed with status ${response.status}`);
       } catch (error) {
         console.error("Refresh session error:", error);
         // Network/Server Error -> Rethrow (Don't Logout)
