@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from "react";
 import ReactDOM from "react-dom";
 import { authService } from "../services/authService";
 import { entitlementService } from "../services/entitlementService";
+import { STORAGE_KEYS } from "../constants/config";
 
 /**
  * UserInfoWidget
@@ -50,7 +51,7 @@ const UserInfoWidget = () => {
   useEffect(() => {
     loadAuthState();
     const handleStorageChange = (changes, area) => {
-      if (area === "local" && changes["fullgrab_auth"]) loadAuthState();
+      if (area === "local" && changes[STORAGE_KEYS.AUTH]) loadAuthState();
     };
     chrome.storage.onChanged.addListener(handleStorageChange);
     return () => chrome.storage.onChanged.removeListener(handleStorageChange);
@@ -204,7 +205,12 @@ const UserInfoWidget = () => {
     return ReactDOM.createPortal(
       <div ref={dropdownRef} style={dropdownStyle}>
         {/* Email header */}
-        <div style={{ padding: "14px 16px 10px", borderBottom: "1px solid #f3f4f6" }}>
+        <div
+          style={{
+            padding: "14px 16px 10px",
+            borderBottom: "1px solid #f3f4f6"
+          }}
+        >
           <div
             style={{
               fontSize: "11px",

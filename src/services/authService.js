@@ -196,21 +196,29 @@ class AuthService {
   async refreshSession() {
     // If called from UI context, delegate to background script
     if (typeof window !== "undefined") {
-      return new Promise((resolve) => {
-        chrome.runtime.sendMessage({ type: "REFRESH_TOKEN" }, (response) => {
-          if (chrome.runtime.lastError) {
-            console.error(
-              "Failed to communicate with background script for refresh:",
-              chrome.runtime.lastError.message || chrome.runtime.lastError
-            );
-            // Fallback: do it locally if background is dead
-            this.performRefresh()
-              .then(resolve)
-              .catch(() => resolve(false));
-          } else {
-            resolve(response?.ok || false);
+      return new Promise((resolve, reject) => {
+        chrome.runtime.sendMessage(
+          { type: "REFRESH_TOKEN" },
+          async (response) => {
+            if (chrome.runtime.lastError) {
+              console.error(
+                "Failed to communicate with background script for refresh:",
+                chrome.runtime.lastError.message || chrome.runtime.lastError
+              );
+              // Fallback: do it locally if background is dead
+              try {
+                const result = await this.performRefresh();
+                resolve(result);
+              } catch (err) {
+                reject(err);
+              }
+            } else if (response?.error) {
+              reject(new Error(response.error));
+            } else {
+              resolve(response?.ok || false);
+            }
           }
-        });
+        );
       });
     }
 
@@ -250,7 +258,9 @@ class AuthService {
           // another context (tab/background) likely refreshed it successfully.
           const currentRefreshToken = await this.getRefreshToken();
           if (currentRefreshToken && currentRefreshToken !== refreshToken) {
-            console.log("Token was refreshed by another context. Considering success.");
+            console.log(
+              "Token was refreshed by another context. Considering success."
+            );
             return true;
           }
 
@@ -259,7 +269,9 @@ class AuthService {
         }
 
         // Server Error / Rate Limit -> Throw (Don't Logout)
-        throw new Error(`Token refresh request failed with status ${response.status}`);
+        throw new Error(
+          `Token refresh request failed with status ${response.status}`
+        );
       } catch (error) {
         console.error("Refresh session error:", error);
         // Network/Server Error -> Rethrow (Don't Logout)
