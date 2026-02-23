@@ -97,12 +97,14 @@ const UserInfoWidget = () => {
 
   // ── Actions ────────────────────────────────────────────────────────────────
   const handleLogout = async () => {
-    closeMenu();
-    await entitlementService.clearCache();
-    await authService.logout();
-    setIsAuthenticated(false);
-    setUser(null);
-    setIsPremium(false);
+    try {
+      closeMenu();
+      await entitlementService.clearCache();
+      await authService.logout();
+      // State will be updated via storage listener in useEffect
+    } catch (e) {
+      console.error("[UserInfoWidget] Logout failed:", e);
+    }
   };
 
   const handleDashboard = () => {

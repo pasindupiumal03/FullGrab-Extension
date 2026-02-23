@@ -1153,10 +1153,12 @@ const EditPage = () => {
 
   return (
     <>
-      <PremiumFeatureModal
-        isOpen={showPremiumModal}
-        onClose={() => (window.location.href = "preview.html")}
-      />
+      {showPremiumModal && (
+        <PremiumFeatureModal
+          isAuthenticated={isAuthenticated}
+          onClose={() => (window.location.href = "preview.html")}
+        />
+      )}
       <style>{`
                 /* Hide scrollbar for sidebar */
                 .edit-sidebar::-webkit-scrollbar {
