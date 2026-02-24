@@ -242,7 +242,7 @@ const TrialExpiredScreen = ({ isPopup = false, isAuthenticated }) => {
           }}
         >
           {isAuthenticated
-            ? `Your ${TRIAL_DURATION_DAYS}-day free trial has ended. To continue using Full Grab features, please upgrade to a premium plan.`
+            ? `Your ${TRIAL_DURATION_DAYS}-day free trial has ended. To continue using FullGrab features, please upgrade to a premium plan.`
             : "You need to sign in to continue using the extension."}
         </p>
 

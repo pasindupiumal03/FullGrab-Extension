@@ -4,6 +4,7 @@ import "./index.css";
 import TrialExpiredScreen from "./components/TrialExpiredScreen";
 import { hasAccess } from "./controllers/subscriptionController";
 import { authService } from "./services/authService";
+import { STORAGE_KEYS } from "./constants/config";
 
 const Popup = () => {
   const [hasAppAccess, setHasAppAccess] = useState(true);

@@ -249,6 +249,11 @@ class AuthService {
           if (user) {
             await this.storeAuth(data.accessToken, data.refreshToken, user);
             return true;
+          } else {
+            console.error(
+              "[AuthService] Token refresh succeeded but user data was not found."
+            );
+            return false;
           }
         }
 
