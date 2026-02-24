@@ -103,6 +103,11 @@ chrome.runtime.onMessage.addListener((request, sender, sendResponse) => {
           sendResponse({ ok: true });
           break;
 
+        case "REFRESH_TOKEN":
+          const refreshed = await authService.refreshSession();
+          sendResponse({ ok: refreshed });
+          break;
+
         case "PING":
           sendResponse({ ok: true });
           break;

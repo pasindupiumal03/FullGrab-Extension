@@ -1,4 +1,5 @@
 import React from "react";
+import { createPortal } from "react-dom";
 import { authService } from "../services/authService";
 
 const PremiumFeatureModal = ({ onClose, isAuthenticated }) => {
@@ -28,7 +29,7 @@ const PremiumFeatureModal = ({ onClose, isAuthenticated }) => {
     }
   };
 
-  return (
+  return createPortal(
     <div
       style={{
         position: "fixed",
@@ -217,7 +218,8 @@ const PremiumFeatureModal = ({ onClose, isAuthenticated }) => {
           </button>
         </div>
       </div>
-    </div>
+    </div>,
+    document.body
   );
 };
 

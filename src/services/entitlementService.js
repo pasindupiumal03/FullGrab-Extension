@@ -11,6 +11,7 @@ class EntitlementService {
   static CACHE_KEY = STORAGE_KEYS.ENTITLEMENT_CACHE;
 
   constructor() {
+    this.premiumCheckPromise = null;
     this.initTrial();
   }
 
@@ -81,33 +82,67 @@ class EntitlementService {
 
   // Check if user has premium access
   async checkPremium() {
-    try {
-      const isAuth = await authService.isAuthenticated();
-      if (!isAuth) {
-        console.log("[Entitlement] User not authenticated, free tier.");
-        return false;
-      }
-
-      // Check cache first
-      const cached = await this.getCache();
-      if (cached && this.isCacheValid(cached)) {
-        return cached.isPremium;
-      }
-
-      console.log(
-        "[Entitlement] Cache expired or missing, fetching from API..."
-      );
-      // Fetch from API
-      const isPremium = await this.fetchPremiumStatus();
-
-      // Update cache
-      await this.setCache(isPremium);
-
-      return isPremium;
-    } catch (error) {
-      console.error("[Entitlement] Premium check failed:", error);
-      return false;
+    // Return existing promise if a check is already in progress
+    if (this.premiumCheckPromise) {
+      return this.premiumCheckPromise;
     }
+
+    this.premiumCheckPromise = (async () => {
+      try {
+        const isAuth = await authService.isAuthenticated();
+        if (!isAuth) {
+          console.log("[Entitlement] User not authenticated, free tier.");
+          return false;
+        }
+
+        // Check for upgrade intent (force refresh if user just came from upgrade flow)
+        const intent = await chrome.storage.local.get(
+          STORAGE_KEYS.UPGRADE_INTENT
+        );
+        if (intent[STORAGE_KEYS.UPGRADE_INTENT]) {
+          console.log("[Entitlement] Upgrade intent found, bypassing cache");
+          await this.clearCache();
+          await chrome.storage.local.remove(STORAGE_KEYS.UPGRADE_INTENT);
+        }
+
+        // Check cache first
+        const cached = await this.getCache();
+        if (cached && this.isCacheValid(cached)) {
+          return cached.isPremium;
+        }
+
+        console.log(
+          "[Entitlement] Cache expired or missing, fetching from API..."
+        );
+        // Fetch from API with retry
+        try {
+          const isPremium = await this.fetchPremiumStatus();
+
+          // Update cache
+          await this.setCache(isPremium);
+
+          return isPremium;
+        } catch (fetchError) {
+          console.log(
+            "First premium check failed, retrying once in 1s...",
+            fetchError
+          );
+          // Wait 1 second before retrying to allow Vercel cold starts to resolve
+          await new Promise((resolve) => setTimeout(resolve, 1000));
+          // Retry once to handle transient refresh race conditions or cold starts
+          const isPremiumRetry = await this.fetchPremiumStatus();
+          await this.setCache(isPremiumRetry);
+          return isPremiumRetry;
+        }
+      } catch (error) {
+        console.error("[Entitlement] Premium check failed:", error);
+        return false;
+      } finally {
+        this.premiumCheckPromise = null;
+      }
+    })();
+
+    return this.premiumCheckPromise;
   }
 
   // Fetch status from API

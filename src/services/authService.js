@@ -117,6 +117,7 @@ class AuthService {
 
     await chrome.storage.local.set({
       [AuthService.STATE_KEY]: state,
+      [STORAGE_KEYS.UPGRADE_INTENT]: true,
     });
 
     const extensionId = chrome.runtime.id;
@@ -190,10 +191,42 @@ class AuthService {
   }
 
   // Refresh session using refresh token
-  // Returns success boolean
-  // Refresh session using refresh token
-  // Returns success boolean
+  // Returns success boolean - true if refreshed, false if refresh token is invalid
+  // Throws error if network/server issue
   async refreshSession() {
+    // If called from UI context, delegate to background script
+    if (typeof window !== "undefined") {
+      return new Promise((resolve, reject) => {
+        chrome.runtime.sendMessage(
+          { type: "REFRESH_TOKEN" },
+          async (response) => {
+            if (chrome.runtime.lastError) {
+              console.error(
+                "Failed to communicate with background script for refresh:",
+                chrome.runtime.lastError.message || chrome.runtime.lastError
+              );
+              // Fallback: do it locally if background is dead
+              try {
+                const result = await this.performRefresh();
+                resolve(result);
+              } catch (err) {
+                reject(err);
+              }
+            } else if (response?.error) {
+              reject(new Error(response.error));
+            } else {
+              resolve(response?.ok || false);
+            }
+          }
+        );
+      });
+    }
+
+    return this.performRefresh();
+  }
+
+  // Internal fetch logic for background script
+  async performRefresh() {
     // If a refresh is already in progress, return the existing promise
     if (this.refreshPromise) {
       return this.refreshPromise;
@@ -210,24 +243,44 @@ class AuthService {
           body: JSON.stringify({ refreshToken }),
         });
 
-        if (!response.ok) {
-          throw new Error(
-            `Token refresh request failed with status ${response.status}`
-          );
+        if (response.ok) {
+          const data = await response.json();
+          const user = await this.getUser();
+          if (user) {
+            await this.storeAuth(data.accessToken, data.refreshToken, user);
+            return true;
+          } else {
+            console.error(
+              "[AuthService] Token refresh succeeded but user data was not found."
+            );
+            return false;
+          }
         }
 
-        const data = await response.json();
-        const user = await this.getUser();
+        // Explicitly Unauthorized (401/403) - Invalid Refresh Token
+        if (response.status === 401 || response.status === 403) {
+          // RACE CONDITION: If token changed in storage while waiting,
+          // another context (tab/background) likely refreshed it successfully.
+          const currentRefreshToken = await this.getRefreshToken();
+          if (currentRefreshToken && currentRefreshToken !== refreshToken) {
+            console.log(
+              "Token was refreshed by another context. Considering success."
+            );
+            return true;
+          }
 
-        if (!user) {
-          throw new Error("User data not found after refresh");
+          // Truly invalid -> Return false (trigger logout)
+          return false;
         }
 
-        await this.storeAuth(data.accessToken, data.refreshToken, user);
-        return true;
+        // Server Error / Rate Limit -> Throw (Don't Logout)
+        throw new Error(
+          `Token refresh request failed with status ${response.status}`
+        );
       } catch (error) {
         console.error("Refresh session error:", error);
-        return false;
+        // Network/Server Error -> Rethrow (Don't Logout)
+        throw error;
       } finally {
         this.refreshPromise = null;
       }
@@ -239,9 +292,12 @@ class AuthService {
   // Fetch with automatic token handling and refresh
   async fetchWithAuth(url, options = {}) {
     // Check if we are currently refreshing
-    // Check if we are currently refreshing
     if (this.refreshPromise) {
-      await this.refreshPromise;
+      try {
+        await this.refreshPromise;
+      } catch (e) {
+        // Ignore error here, we'll try to use current token or fail
+      }
     }
 
     const accessToken = await this.getAccessToken();
@@ -251,20 +307,34 @@ class AuthService {
       headers.set("Authorization", `Bearer ${accessToken}`);
     }
 
-    const response = await fetch(url, { ...options, headers });
+    try {
+      const response = await fetch(url, { ...options, headers });
 
-    if (response.status === 401) {
-      const refreshed = await this.refreshSession();
-      if (refreshed) {
-        const newAccessToken = await this.getAccessToken();
-        headers.set("Authorization", `Bearer ${newAccessToken}`);
-        return fetch(url, { ...options, headers });
-      } else {
-        await this.logout();
+      if (response.status === 401) {
+        try {
+          // Try refresh
+          const refreshed = await this.refreshSession();
+          if (refreshed) {
+            const newAccessToken = await this.getAccessToken();
+            headers.set("Authorization", `Bearer ${newAccessToken}`);
+            return fetch(url, { ...options, headers });
+          } else {
+            // Refresh token invalid
+            await this.logout();
+            return response;
+          }
+        } catch (refreshError) {
+          // Network error during refresh - don't logout, just return original 401
+          console.error("Token refresh interrupted:", refreshError);
+          return response;
+        }
       }
-    }
 
-    return response;
+      return response;
+    } catch (error) {
+      // Network error on the main request
+      throw error;
+    }
   }
 }
 
