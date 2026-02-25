@@ -2,6 +2,7 @@ import React, { useEffect, useState } from "react";
 import { createRoot } from "react-dom/client";
 import "./index.css";
 import { jsPDF } from "jspdf";
+import html2canvas from "html2canvas";
 import PremiumFeatureModal from "./components/PremiumFeatureModal";
 import TrialExpiredScreen from "./components/TrialExpiredScreen";
 import { isPremiumUser, hasAccess } from "./controllers/subscriptionController";

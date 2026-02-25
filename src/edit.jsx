@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from "react";
 import { createRoot } from "react-dom/client";
 import { jsPDF } from "jspdf";
+import html2canvas from "html2canvas";
 import "./index.css";
 import UserInfoWidget from "./components/UserInfoWidget";
 import PremiumFeatureModal from "./components/PremiumFeatureModal";
@@ -310,27 +311,18 @@ const EditPage = () => {
       }
 
       // Use html2canvas to capture the entire edited canvas with all overlays
-      import("html2canvas")
-        .then((html2canvas) => {
-          html2canvas
-            .default(editCanvas, {
-              backgroundColor: null,
-              scale: 2, // Higher quality
-              logging: false,
-              useCORS: true,
-              allowTaint: true
-            })
-            .then((canvas) => {
-              resolve(canvas.toDataURL("image/png"));
-            })
-            .catch((err) => {
-              console.error("Failed to capture canvas:", err);
-              // Fallback to basic capture
-              captureEditedCanvasFallback().then(resolve);
-            });
+      html2canvas(editCanvas, {
+        backgroundColor: null,
+        scale: 2, // Higher quality
+        logging: false,
+        useCORS: true,
+        allowTaint: true
+      })
+        .then((canvas) => {
+          resolve(canvas.toDataURL("image/png"));
         })
         .catch((err) => {
-          console.error("Failed to load html2canvas:", err);
+          console.error("Failed to capture canvas:", err);
           // Fallback to basic capture
           captureEditedCanvasFallback().then(resolve);
         });
