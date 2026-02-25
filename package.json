@@ -9,7 +9,8 @@
     "build:dev": "webpack --config webpack.dev.js",
     "clean": "rimraf dist",
     "check": "node scripts/check.js",
-    "package": "npm run build && node scripts/package.js"
+    "package": "npm run build && node scripts/package.js",
+    "postinstall": "patch-package"
   },
   "keywords": [
     "chrome-extension",
@@ -30,6 +31,7 @@
     "file-loader": "^6.2.0",
     "html2canvas": "^1.4.1",
     "jspdf": "^2.5.2",
+    "patch-package": "^8.0.1",
     "postcss": "^8.5.0",
     "postcss-loader": "^8.1.1",
     "postcss-preset-env": "^10.1.4",
