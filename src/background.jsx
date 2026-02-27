@@ -10,6 +10,16 @@ chrome.runtime.onInstalled.addListener(async () => {
 
 chrome.runtime.onStartup.addListener(async () => {
   console.log("[Background] Browser startup");
+  try {
+    console.log("[Background] Checking premium entitlement on startup...");
+    await entitlementService.checkPremium();
+    console.log("[Background] Premium entitlement check completed.");
+  } catch (error) {
+    console.error(
+      "[Background] Failed to check premium entitlement on startup:",
+      error
+    );
+  }
 });
 
 // Ensure offscreen document exists
