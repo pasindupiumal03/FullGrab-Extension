@@ -1,5 +1,5 @@
-// export const HUB_URL = "https://extensions-hub-theta.vercel.app";
-export const HUB_URL = "http://localhost:3000";
+export const HUB_URL = "https://extensions-hub-theta.vercel.app";
+// export const HUB_URL = "http://localhost:3000";
 export const APP_ID = "fullgrab";
 export const TRIAL_DURATION_DAYS = 20;
 export const ENTITLEMENT_CACHE_TTL = 120000; // 2 minutes cache time
