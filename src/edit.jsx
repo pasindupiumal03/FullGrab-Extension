@@ -220,6 +220,44 @@ const EditPage = () => {
       (result) => {
         if (result.capturedImage) {
           setImage(result.capturedImage);
+
+          // Auto-extract background color from the top-left pixel to form a gradient
+          const img = new Image();
+          img.onload = () => {
+            const canvas = document.createElement("canvas");
+            canvas.width = 1;
+            canvas.height = 1;
+            const ctx = canvas.getContext("2d");
+            ctx.drawImage(img, 0, 0, 1, 1, 0, 0, 1, 1);
+            const [r, g, b, a] = ctx.getImageData(0, 0, 1, 1).data;
+            if (a > 200) {
+              const hex1 = "#" + [r, g, b].map(x => x.toString(16).padStart(2, "0")).join("");
+              
+              // Determine if color is dark or light
+              const luminance = (0.299 * r + 0.587 * g + 0.114 * b);
+              let r2, g2, b2;
+              
+              if (luminance < 40) {
+                // Color is very dark, so lighten it to create the gradient
+                r2 = Math.min(255, r + 40);
+                g2 = Math.min(255, g + 40);
+                b2 = Math.min(255, b + 40);
+              } else {
+                // Otherwise darken it to create the gradient
+                r2 = Math.max(0, Math.floor(r * 0.75));
+                g2 = Math.max(0, Math.floor(g * 0.75));
+                b2 = Math.max(0, Math.floor(b * 0.75));
+              }
+              
+              const hex2 = "#" + [r2, g2, b2].map(x => x.toString(16).padStart(2, "0")).join("");
+              const generatedGradient = `linear-gradient(135deg, ${hex1} 0%, ${hex2} 100%)`;
+              
+              setSelectedGradient(generatedGradient);
+              setSelectedColor(null);
+              setBackgroundEnabled(true);
+            }
+          };
+          img.src = result.capturedImage;
         }
         if (result.originalCaptures) {
           setCaptures(result.originalCaptures);
@@ -979,25 +1017,6 @@ const EditPage = () => {
     "linear-gradient(135deg, #e94057 0%, #8a2387 100%)"
   ];
 
-  const solidColors = [
-    "#FFFFFF",
-    "#F3F4F6",
-    "#E5E7EB",
-    "#D1D5DB",
-    "#9CA3AF",
-    "#6B7280",
-    "#4B5563",
-    "#374151",
-    "#1F2937",
-    "#111827",
-    "#EF4444",
-    "#F59E0B",
-    "#10B981",
-    "#3B82F6",
-    "#6366F1",
-    "#8B5CF6"
-  ];
-
   const getToolIcon = (toolId, isActive) => {
     const color = "currentColor";
     const icons = {
@@ -1131,7 +1150,6 @@ const EditPage = () => {
   const tools = [
     { id: "background", label: "Add BG" },
     { id: "frame", label: "Frame" },
-    { id: "resize", label: "Resize" },
     { id: "crop", label: "Crop" },
     { id: "text", label: "Text" },
     { id: "shapes", label: "Shapes" },
@@ -1919,8 +1937,67 @@ const EditPage = () => {
                     </div>
                   )}
 
-                  {/* Solid Colors */}
-                  {backgroundEnabled && (
+                  <div>
+                    <div style={{ marginBottom: "16px", marginTop: "16px" }}>
+                      <div
+                        style={{
+                          fontSize: "12px",
+                          fontWeight: 600,
+                          color: "#6b7280",
+                          marginBottom: "8px"
+                        }}
+                      >
+                        Image Scale: {imageSize}%
+                      </div>
+                      <input
+                        type="range"
+                        min="50"
+                        max="150"
+                        value={imageSize}
+                        onChange={(e) => setImageSize(Number(e.target.value))}
+                        style={{ width: "100%", accentColor: "black" }}
+                      />
+                    </div>
+                    <div style={{ marginBottom: "16px" }}>
+                      <div
+                        style={{
+                          fontSize: "12px",
+                          fontWeight: 600,
+                          color: "#6b7280",
+                          marginBottom: "8px"
+                        }}
+                      >
+                        Padding: {paddingSize}px
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="100"
+                        value={paddingSize}
+                        onChange={(e) => setPaddingSize(Number(e.target.value))}
+                        style={{ width: "100%", accentColor: "black" }}
+                      />
+                    </div>
+                    <div style={{ marginBottom: "16px" }}>
+                      <div
+                        style={{
+                          fontSize: "12px",
+                          fontWeight: 600,
+                          color: "#6b7280",
+                          marginBottom: "8px"
+                        }}
+                      >
+                        Corner Radius: {cornerRadius}px
+                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="50"
+                        value={cornerRadius}
+                        onChange={(e) => setCornerRadius(Number(e.target.value))}
+                        style={{ width: "100%", accentColor: "black" }}
+                      />
+                    </div>
                     <div>
                       <div
                         style={{
@@ -1930,32 +2007,18 @@ const EditPage = () => {
                           marginBottom: "8px"
                         }}
                       >
-                        Solid Colors
+                        Shadow: {shadowIntensity}px
                       </div>
-                      <div
-                        style={{
-                          display: "grid",
-                          gridTemplateColumns: "repeat(4, 1fr)",
-                          gap: "6px"
-                        }}
-                      >
-                        {solidColors.map((color, index) => (
-                          <button
-                            key={index}
-                            onClick={() => setSelectedColor(color)}
-                            style={{
-                              aspectRatio: "1",
-                              background: color,
-                              border:
-                                selectedColor === color ? "2px solid #a855f7" : "1px solid #e5e7eb",
-                              borderRadius: "8px",
-                              cursor: "pointer"
-                            }}
-                          />
-                        ))}
-                      </div>
+                      <input
+                        type="range"
+                        min="0"
+                        max="50"
+                        value={shadowIntensity}
+                        onChange={(e) => setShadowIntensity(Number(e.target.value))}
+                        style={{ width: "100%", accentColor: "black" }}
+                      />
                     </div>
-                  )}
+                  </div>
                 </>
               )}
 
@@ -2064,90 +2127,6 @@ const EditPage = () => {
                 </div>
               )}
 
-              {activeTool === "resize" && (
-                <div>
-                  <div style={{ marginBottom: "16px" }}>
-                    <div
-                      style={{
-                        fontSize: "12px",
-                        fontWeight: 600,
-                        color: "#6b7280",
-                        marginBottom: "8px"
-                      }}
-                    >
-                      Image Scale: {imageSize}%
-                    </div>
-                    <input
-                      type="range"
-                      min="50"
-                      max="150"
-                      value={imageSize}
-                      onChange={(e) => setImageSize(Number(e.target.value))}
-                      style={{ width: "100%", accentColor: "black" }}
-                    />
-                  </div>
-                  <div style={{ marginBottom: "16px" }}>
-                    <div
-                      style={{
-                        fontSize: "12px",
-                        fontWeight: 600,
-                        color: "#6b7280",
-                        marginBottom: "8px"
-                      }}
-                    >
-                      Padding: {paddingSize}px
-                    </div>
-                    <input
-                      type="range"
-                      min="0"
-                      max="100"
-                      value={paddingSize}
-                      onChange={(e) => setPaddingSize(Number(e.target.value))}
-                      style={{ width: "100%", accentColor: "black" }}
-                    />
-                  </div>
-                  <div style={{ marginBottom: "16px" }}>
-                    <div
-                      style={{
-                        fontSize: "12px",
-                        fontWeight: 600,
-                        color: "#6b7280",
-                        marginBottom: "8px"
-                      }}
-                    >
-                      Corner Radius: {cornerRadius}px
-                    </div>
-                    <input
-                      type="range"
-                      min="0"
-                      max="50"
-                      value={cornerRadius}
-                      onChange={(e) => setCornerRadius(Number(e.target.value))}
-                      style={{ width: "100%", accentColor: "black" }}
-                    />
-                  </div>
-                  <div>
-                    <div
-                      style={{
-                        fontSize: "12px",
-                        fontWeight: 600,
-                        color: "#6b7280",
-                        marginBottom: "8px"
-                      }}
-                    >
-                      Shadow: {shadowIntensity}px
-                    </div>
-                    <input
-                      type="range"
-                      min="0"
-                      max="50"
-                      value={shadowIntensity}
-                      onChange={(e) => setShadowIntensity(Number(e.target.value))}
-                      style={{ width: "100%", accentColor: "black" }}
-                    />
-                  </div>
-                </div>
-              )}
 
               {activeTool === "text" && (
                 <div>
