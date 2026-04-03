@@ -472,8 +472,27 @@ const EditPage = () => {
         ctx.closePath();
         ctx.clip();
 
-        // Draw the image
-        ctx.drawImage(img, paddingSize, paddingSize, scaledWidth, scaledHeight);
+        // Handle browser frame manually in fallback for safety
+        if (frameStyle.startsWith("browser")) {
+          const isDark = frameStyle === "browser-dark";
+          const barHeight = 32;
+          // Draw browser bar
+          ctx.fillStyle = isDark ? "#2d3748" : "#f8fafc";
+          ctx.fillRect(paddingSize, paddingSize, scaledWidth, barHeight);
+          ctx.fillStyle = isDark ? "#1a202c" : "#e2e8f0";
+          ctx.fillRect(paddingSize, paddingSize + barHeight - 1, scaledWidth, 1);
+          
+          // Draw buttons
+          ctx.beginPath(); ctx.arc(paddingSize + 20, paddingSize + barHeight/2, 6, 0, Math.PI*2); ctx.fillStyle = "#ff5f56"; ctx.fill(); ctx.lineWidth = 1; ctx.strokeStyle = "#e0443e"; ctx.stroke();
+          ctx.beginPath(); ctx.arc(paddingSize + 40, paddingSize + barHeight/2, 6, 0, Math.PI*2); ctx.fillStyle = "#ffbd2e"; ctx.fill(); ctx.strokeStyle = "#dea123"; ctx.stroke();
+          ctx.beginPath(); ctx.arc(paddingSize + 60, paddingSize + barHeight/2, 6, 0, Math.PI*2); ctx.fillStyle = "#27c93f"; ctx.fill(); ctx.strokeStyle = "#1aab29"; ctx.stroke();
+
+          // Draw image (squashed slightly in fallback)
+          ctx.drawImage(img, paddingSize, paddingSize + barHeight, scaledWidth, scaledHeight - barHeight);
+        } else {
+          // Draw the image
+          ctx.drawImage(img, paddingSize, paddingSize, scaledWidth, scaledHeight);
+        }
 
         if (frameStyle === "border") {
           ctx.stroke();
@@ -2041,7 +2060,7 @@ const EditPage = () => {
                       gap: "8px"
                     }}
                   >
-                    {["shadow", "border", "glow"].map((style) => {
+                    {["shadow", "border", "glow", "browser-light", "browser-dark"].map((style) => {
                       const isActive = frameStyle === style;
                       return (
                         <button
@@ -2113,12 +2132,32 @@ const EditPage = () => {
                               <line x1="12" y1="16" x2="12.01" y2="16" />
                             </svg>
                           )}
+                          {style.startsWith("browser") && (
+                            <svg
+                              width="18"
+                              height="18"
+                              viewBox="0 0 24 24"
+                              fill="none"
+                              stroke="currentColor"
+                              strokeWidth="2"
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                            >
+                               <rect x="3" y="3" width="18" height="18" rx="2" ry="2" />
+                               <line x1="3" y1="9" x2="21" y2="9" />
+                               <path d="M7 6h.01M10 6h.01M13 6h.01" />
+                            </svg>
+                          )}
                           <span>
                             {style === "shadow"
                               ? "Drop Shadow"
                               : style === "border"
                                 ? "Border"
-                                : "Glow Effect"}
+                                : style === "glow"
+                                  ? "Glow Effect"
+                                  : style === "browser-light"
+                                    ? "macOS Browser - Light"
+                                    : "macOS Browser - Dark"}
                           </span>
                         </button>
                       );
@@ -3340,17 +3379,13 @@ const EditPage = () => {
               >
                 {image ? (
                   <>
-                    <img
-                      src={image}
-                      alt="Screenshot"
-                      draggable={false}
-                      onDragStart={(e) => e.preventDefault()}
+                    <div
                       style={{
                         maxWidth: "100%",
                         maxHeight: "100%",
                         borderRadius: `${cornerRadius}px`,
                         boxShadow:
-                          frameStyle === "shadow"
+                          frameStyle === "shadow" || frameStyle.startsWith("browser")
                             ? `0 ${shadowIntensity}px ${shadowIntensity * 2}px rgba(0,0,0,0.3)`
                             : frameStyle === "glow"
                               ? `0 0 ${shadowIntensity}px ${shadowIntensity / 2}px rgba(168, 85, 247, 0.6)`
@@ -3358,10 +3393,35 @@ const EditPage = () => {
                         border: frameStyle === "border" ? "4px solid white" : "none",
                         transform: `scale(${imageSize / 100})`,
                         transition: "all 0.3s ease",
+                        display: "flex",
+                        flexDirection: "column",
+                        overflow: "hidden",
+                        backgroundColor: frameStyle === "browser-dark" ? "#1a202c" : (frameStyle === "browser-light" ? "white" : "transparent"),
                         pointerEvents: "none",
                         userSelect: "none"
                       }}
-                    />
+                    >
+                      {frameStyle.startsWith("browser") && (
+                        <div style={{ padding: "10px 14px", background: frameStyle === "browser-dark" ? "#2d3748" : "#f8fafc", borderBottom: frameStyle === "browser-dark" ? "1px solid #1a202c" : "1px solid #e2e8f0", display: "flex", gap: "8px", alignItems: "center" }}>
+                          <div style={{ width: "12px", height: "12px", borderRadius: "50%", background: "#ff5f56", border: "1px solid #e0443e" }}></div>
+                          <div style={{ width: "12px", height: "12px", borderRadius: "50%", background: "#ffbd2e", border: "1px solid #dea123" }}></div>
+                          <div style={{ width: "12px", height: "12px", borderRadius: "50%", background: "#27c93f", border: "1px solid #1aab29" }}></div>
+                        </div>
+                      )}
+                      <img
+                        src={image}
+                        alt="Screenshot"
+                        draggable={false}
+                        onDragStart={(e) => e.preventDefault()}
+                        style={{
+                          width: "100%",
+                          height: "100%",
+                          objectFit: "fill",
+                          pointerEvents: "none",
+                          display: "block"
+                        }}
+                      />
+                    </div>
                     {/* Text Overlays - Interactive with drag and selection */}
                     {textOverlays.map((overlay) => (
                       <div
